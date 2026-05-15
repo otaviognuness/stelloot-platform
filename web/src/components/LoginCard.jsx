@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import logo from '../assets/logo1.png'
 
-// ── helpers ──────────────────────────────────────────────────────────────────
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
 
 function passwordStrength(pass) {
@@ -19,7 +18,6 @@ function passwordStrength(pass) {
   return levels[score - 1] ?? levels[0]
 }
 
-// ── sub-components ────────────────────────────────────────────────────────────
 function PasswordInput({ id, value, onChange, placeholder }) {
   const [visible, setVisible] = useState(false)
   return (
@@ -53,26 +51,22 @@ function FieldError({ msg }) {
   )
 }
 
-// ── main component ────────────────────────────────────────────────────────────
 export default function LoginCard({ onSuccess, onBack }) {
   const [tab, setTab] = useState('login')   // 'login' | 'register'
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
 
-  // login fields
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPass, setLoginPass]   = useState('')
   const [loginErrs, setLoginErrs]   = useState({})
 
-  // register fields
   const [regName, setRegName]   = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regPass, setRegPass]   = useState('')
   const [regPass2, setRegPass2] = useState('')
   const [regErrs, setRegErrs]   = useState({})
 
-  // ── handlers ────────────────────────────────────────────────────────────────
   function handleLogin() {
     const errs = {}
     if (!loginEmail) errs.email = 'Informe seu email'
@@ -126,7 +120,7 @@ export default function LoginCard({ onSuccess, onBack }) {
 
   const strength = regPass ? passwordStrength(regPass) : null
 
-  // ── success screen ──────────────────────────────────────────────────────────
+
   if (done) {
     return (
       <section className="login-page">
@@ -144,7 +138,6 @@ export default function LoginCard({ onSuccess, onBack }) {
     )
   }
 
-  // ── form ────────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -278,7 +271,6 @@ export default function LoginCard({ onSuccess, onBack }) {
               : 'Junte-se à plataforma e nunca pague caro em jogos.'}
           </p>
 
-          {/* tabs */}
           <div className="lc-tabs">
             <button
               className={`lc-tab${tab === 'login' ? ' active' : ''}`}
@@ -295,7 +287,7 @@ export default function LoginCard({ onSuccess, onBack }) {
           </div>
 
           {tab === 'login' ? (
-            /* ── LOGIN ── */
+            
             <>
               <div className="lc-field">
                 <label className="lc-label">Email</label>
@@ -337,7 +329,6 @@ export default function LoginCard({ onSuccess, onBack }) {
               </button>
             </>
           ) : (
-            /* ── REGISTER ── */
             <>
               <div className="lc-field">
                 <label className="lc-label">Nome completo</label>
@@ -412,7 +403,6 @@ export default function LoginCard({ onSuccess, onBack }) {
   )
 }
 
-// ── Google icon ───────────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48">

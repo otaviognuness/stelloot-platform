@@ -275,15 +275,17 @@ button:hover {
 }
 
 .game-cover {
-  height: 150px;
+  height: 180px;
   padding: 16px;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(0, 212, 255, 0.28),
-      rgba(124, 60, 255, 0.5)
-    ),
-    #101b3f;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  overflow: hidden;
+  position: relative;
 }
 
 .game-cover span {
@@ -607,3 +609,16 @@ button:hover {
   margin: 12px 0 4px;
 }
 
+.see-all-button {
+  border: 0;
+  background: transparent;
+  color: #20f5b7;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.see-all-button:hover {
+  box-shadow: none;
+  transform: translateY(-1px);
+}
