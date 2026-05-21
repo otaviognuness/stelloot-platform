@@ -1,0 +1,19 @@
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color: #ffffff;
+  background: #070b18;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
