@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class UserRequestDTO {
-
-    @NotBlank(message = "Nome e obrigatorio")
-    private String username;
+public class LoginRequestDTO {
 
     @Email(message = "Email invalido")
     @NotBlank(message = "Email e obrigatorio")

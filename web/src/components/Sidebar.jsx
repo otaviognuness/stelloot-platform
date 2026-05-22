@@ -4,8 +4,8 @@ const NAV_ITEMS = [
   { id: 'home', label: 'Explorar' },
   { id: 'offers', label: 'Ofertas' },
   { id: 'wishlist', label: 'Wishlist' },
-  { id: 'alerts', label: 'Alertas' },
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'settings', label: 'Configuracoes' },
 ]
 
 function Sidebar({ activePage = 'home', onNavigate }) {

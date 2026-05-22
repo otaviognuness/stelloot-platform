@@ -1,6 +1,6 @@
-function FilterTabs({ label, options, value, onChange }) {
+function FilterTabs({ className = '', label, options, value, onChange }) {
   return (
-    <div className="filter-tabs" aria-label={label}>
+    <div className={`filter-tabs ${className}`.trim()} aria-label={label}>
       {options.map((option) => (
         <button
           className={option.id === value ? 'active' : ''}

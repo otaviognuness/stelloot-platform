@@ -10,10 +10,13 @@ function GameCard({
   onCreateAlert,
   onSelect,
   onToggleWishlist,
+  savedGame,
 }) {
   const discount = Math.round(Number(game.savings || 0))
   const title = game.displayTitle || game.title
   const dealUrl = game.dealUrl || getDealUrl(game.dealID)
+  const hasPrice = Number(game.salePrice || 0) > 0
+  const hasOriginalPrice = Number(game.normalPrice || 0) > Number(game.salePrice || 0)
 
   function handleOpenDetails() {
     onSelect?.(game)
@@ -28,7 +31,7 @@ function GameCard({
 
   return (
     <article
-      className="game-card"
+      className={`game-card${game.catalogOnly ? ' catalog-card' : ''}`}
       onClick={handleOpenDetails}
       onKeyDown={handleKeyDown}
       role="button"
@@ -38,18 +41,31 @@ function GameCard({
         className="game-cover"
         style={{ backgroundImage: `url(${game.thumb})` }}
       >
-        <span>-{discount}%</span>
+        <span>{discount > 0 ? `-${discount}%` : 'Catalogo'}</span>
       </div>
 
       <div className="game-info">
-        <small>{game.storeName} · PC</small>
+        <small>{game.storeName} - PC</small>
         <h4>{title}</h4>
 
         <div className="prices">
-          <strong>{formatBRLFromDollar(game.salePrice)}</strong>
-          <span>{formatBRLFromDollar(game.normalPrice)}</span>
+          <strong>{hasPrice ? formatBRLFromDollar(game.salePrice) : 'Ver preco'}</strong>
+          {hasOriginalPrice && <span>{formatBRLFromDollar(game.normalPrice)}</span>}
         </div>
-        <em className="price-note">{formatDollar(game.salePrice)} na origem</em>
+        {hasPrice && <em className="price-note">{formatDollar(game.salePrice)} na origem</em>}
+        {game.catalogOnly && (
+          <em className="price-note target-note">
+            Resultado de catalogo, mesmo sem promocao ativa.
+          </em>
+        )}
+        {savedGame?.targetPrice && (
+          <em className="price-note target-note">
+            Alvo: {Number(savedGame.targetPrice).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
+          </em>
+        )}
 
         <div className="game-actions">
           <button
@@ -69,7 +85,7 @@ function GameCard({
               onCreateAlert?.(game)
             }}
           >
-            Alerta
+            Preco alvo
           </button>
           <a
             href={dealUrl}
@@ -77,7 +93,7 @@ function GameCard({
             rel="noreferrer"
             target="_blank"
           >
-            Ver oferta
+            {game.catalogOnly ? 'Ver jogo' : 'Ver oferta'}
           </a>
         </div>
       </div>

@@ -55,6 +55,14 @@ Endpoint de ofertas:
 GET http://localhost:8080/api/deals
 ```
 
+Endpoints de autenticacao JWT:
+
+```text
+POST http://localhost:8080/api/auth/register
+POST http://localhost:8080/api/auth/login
+GET  http://localhost:8080/api/auth/me
+```
+
 ### Web
 
 ```powershell
@@ -81,12 +89,18 @@ Por padrao, o backend usa H2 em memoria para facilitar testes locais.
 
 Para usar PostgreSQL, configure:
 
-```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/stelloot
-SPRING_DATASOURCE_DRIVER=org.postgresql.Driver
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=sua_senha
-SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+```powershell
+$env:SPRING_DATASOURCE_URL='jdbc:postgresql://localhost:5432/stelloot'
+$env:SPRING_DATASOURCE_DRIVER='org.postgresql.Driver'
+$env:SPRING_DATASOURCE_USERNAME='postgres'
+$env:SPRING_DATASOURCE_PASSWORD='sua_senha'
+$env:SPRING_JPA_DATABASE_PLATFORM='org.hibernate.dialect.PostgreSQLDialect'
+```
+
+Para o JWT, use uma chave local por variavel de ambiente:
+
+```powershell
+$env:STELLOOT_JWT_SECRET='troque-por-uma-chave-grande-para-apresentacao'
 ```
 
 ## Validacao

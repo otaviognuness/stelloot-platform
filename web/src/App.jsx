@@ -3,12 +3,13 @@ import './App.css'
 import Sidebar from './components/Sidebar'
 import useLocalStorage from './hooks/useLocalStorage'
 import LoginCard from './components/LoginCard'
-import Alerts from './pages/Alerts'
 import Dashboard from './pages/Dashboard'
 import GameDetails from './pages/GameDetails'
 import Home from './pages/Home'
 import Offers from './pages/Offers'
+import Settings from './pages/Settings'
 import Wishlist from './pages/Wishlist'
+import { getAuthenticatedUser } from './services/authService'
 import { getPcDeals } from './services/cheapSharkService'
 import { dollarToBRL, getGameKey } from './utils/deals'
 
@@ -19,8 +20,11 @@ function App() {
   const [loadingDeals, setLoadingDeals] = useState(true)
   const [dealsError, setDealsError] = useState('')
   const [dealsWarning, setDealsWarning] = useState('')
+  const [theme, setTheme] = useLocalStorage('stelloot:theme', 'default')
+  const [currentUser, setCurrentUser] = useLocalStorage('stelloot:user', null)
   const [wishlist, setWishlist] = useLocalStorage('stelloot:wishlist', [])
-  const [alerts, setAlerts] = useLocalStorage('stelloot:alerts', [])
+  const [offersInitialSearch, setOffersInitialSearch] = useState('')
+  const activeTheme = ['default', 'black', 'light'].includes(theme) ? theme : 'default'
 
   const loadDeals = useCallback(async ({ forceRefresh = false } = {}) => {
     try {
@@ -35,7 +39,7 @@ function App() {
       setDealsError(
         error?.code === 'RATE_LIMIT'
           ? 'A CheapShark bloqueou chamadas temporariamente por limite de uso. Aguarde alguns minutos e atualize.'
-          : 'Não foi possível carregar o backend agora. Confirme se o Spring Boot está rodando na porta 8080.'
+          : 'Nao foi possivel carregar o backend agora. Confirme se o Spring Boot esta rodando na porta 8080.'
       )
     } finally {
       setLoadingDeals(false)
@@ -50,7 +54,41 @@ function App() {
     return () => window.clearTimeout(taskId)
   }, [loadDeals])
 
-  function handleNavigate(nextPage) {
+  useEffect(() => {
+    if (!currentUser?.token) return undefined
+
+    let active = true
+
+    getAuthenticatedUser(currentUser.token)
+      .then((user) => {
+        if (!active) return
+
+        setCurrentUser((session) => ({
+          ...session,
+          email: user.email,
+          id: user.id,
+          name: user.username || user.email?.split('@')[0] || 'Usuario',
+        }))
+      })
+      .catch(() => {
+        if (active) setCurrentUser(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentUser?.token, setCurrentUser])
+
+  function handleNavigate(nextPage, options = {}) {
+    if (nextPage === 'alerts') {
+      setPage('wishlist')
+      return
+    }
+
+    if (nextPage === 'offers') {
+      setOffersInitialSearch(options.search || '')
+    }
+
     if (nextPage === 'home') {
       setSelectedGame(null)
     }
@@ -76,41 +114,70 @@ function App() {
         return currentWishlist.filter((item) => getGameKey(item) !== key)
       }
 
-      return [{ ...game, savedAt: Date.now() }, ...currentWishlist]
+      return [
+        {
+          ...game,
+          savedAt: Date.now(),
+          targetPrice: Math.max(1, Math.floor(dollarToBRL(game.salePrice) * 0.85)),
+        },
+        ...currentWishlist,
+      ]
     })
   }
 
   function handleCreateAlert(game) {
     const currentPrice = dollarToBRL(game.salePrice)
     const answer = window.prompt(
-      `Qual preço alvo em R$ para ${game.displayTitle || game.title}?`,
+      `Qual preco alvo em R$ para ${game.displayTitle || game.title}?`,
       Math.max(1, Math.floor(currentPrice * 0.85)).toString()
     )
     const targetPrice = Number(String(answer || '').replace(',', '.'))
 
     if (!targetPrice || targetPrice <= 0) return
 
-    setAlerts((currentAlerts) => [
-      {
-        id: `${getGameKey(game)}-${Date.now()}`,
-        createdAt: Date.now(),
-        game,
-        targetPrice,
-      },
-      ...currentAlerts,
-    ])
+    const key = getGameKey(game)
+
+    setWishlist((currentWishlist) => {
+      const alreadySaved = currentWishlist.some((item) => getGameKey(item) === key)
+
+      if (alreadySaved) {
+        return currentWishlist.map((item) =>
+          getGameKey(item) === key ? { ...item, targetPrice } : item
+        )
+      }
+
+      return [{ ...game, savedAt: Date.now(), targetPrice }, ...currentWishlist]
+    })
   }
 
-  function handleRemoveAlert(alertId) {
-    setAlerts((currentAlerts) =>
-      currentAlerts.filter((alert) => alert.id !== alertId)
-    )
+  function getWishlistedGame(game) {
+    const key = getGameKey(game)
+    return wishlist.find((item) => getGameKey(item) === key) || null
+  }
+
+  function handleLoginSuccess(authResponse) {
+    const user = authResponse.user || authResponse
+
+    setCurrentUser({
+      id: user.id,
+      email: user.email || 'usuario@stelloot.local',
+      name: user.username || user.name || user.email?.split('@')[0] || 'Usuario',
+      provider: user.provider || 'local',
+      token: authResponse.token,
+      tokenType: authResponse.tokenType || 'Bearer',
+    })
+    handleNavigate('home')
+  }
+
+  function handleLogout() {
+    setCurrentUser(null)
   }
 
   function renderContent() {
     const sharedProps = {
       deals,
       error: dealsError,
+      getWishlistedGame,
       isWishlisted,
       loading: loadingDeals,
       onCreateAlert: handleCreateAlert,
@@ -121,7 +188,12 @@ function App() {
     }
 
     if (page === 'login') {
-      return <LoginCard onBack={() => handleNavigate('home')} />
+      return (
+        <LoginCard
+          onBack={() => handleNavigate('home')}
+          onSuccess={handleLoginSuccess}
+        />
+      )
     }
 
     if (page === 'details' && selectedGame) {
@@ -131,19 +203,27 @@ function App() {
           isWishlisted={isWishlisted(selectedGame)}
           onBack={() => handleNavigate('home')}
           onCreateAlert={handleCreateAlert}
+          savedGame={getWishlistedGame(selectedGame)}
           onToggleWishlist={handleToggleWishlist}
         />
       )
     }
 
     if (page === 'offers') {
-      return <Offers {...sharedProps} />
+      return (
+        <Offers
+          {...sharedProps}
+          initialSearch={offersInitialSearch}
+          key={`offers-${offersInitialSearch}`}
+        />
+      )
     }
 
     if (page === 'wishlist') {
       return (
         <Wishlist
           games={wishlist}
+          getWishlistedGame={getWishlistedGame}
           isWishlisted={isWishlisted}
           onCreateAlert={handleCreateAlert}
           onNavigate={handleNavigate}
@@ -153,20 +233,9 @@ function App() {
       )
     }
 
-    if (page === 'alerts') {
-      return (
-        <Alerts
-          alerts={alerts}
-          onNavigate={handleNavigate}
-          onRemoveAlert={handleRemoveAlert}
-        />
-      )
-    }
-
     if (page === 'dashboard') {
       return (
         <Dashboard
-          alerts={alerts}
           deals={deals}
           onNavigate={handleNavigate}
           wishlist={wishlist}
@@ -174,17 +243,31 @@ function App() {
       )
     }
 
+    if (page === 'settings') {
+      return (
+        <Settings
+          onThemeChange={setTheme}
+          theme={activeTheme}
+        />
+      )
+    }
+
     return (
       <Home
         {...sharedProps}
+        currentUser={currentUser}
         onLogin={() => handleNavigate('login')}
+        onLogout={handleLogout}
         onNavigate={handleNavigate}
       />
     )
   }
 
   return (
-    <main className={page === 'login' ? 'app login-layout' : 'app'}>
+    <main
+      className={page === 'login' ? 'app login-layout' : 'app'}
+      data-theme={activeTheme}
+    >
       {page !== 'login' && <Sidebar activePage={page} onNavigate={handleNavigate} />}
 
       <section className="content">

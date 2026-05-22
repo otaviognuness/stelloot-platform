@@ -10,6 +10,7 @@ function GameDetails({
   onBack,
   onCreateAlert,
   onToggleWishlist,
+  savedGame,
 }) {
   if (!game) {
     return null
@@ -22,7 +23,7 @@ function GameDetails({
   return (
     <section className="details-page">
       <button className="details-back" onClick={onBack} type="button">
-        ← Voltar
+        Voltar
       </button>
 
       <div
@@ -30,7 +31,7 @@ function GameDetails({
         style={{ backgroundImage: `url(${game.thumb})` }}
       >
         <div className="details-hero-overlay">
-          <span>{game.storeName} · PC</span>
+          <span>{game.storeName} - PC</span>
           <h2>{title}</h2>
 
           <div className="details-price-row">
@@ -38,17 +39,26 @@ function GameDetails({
             <span>{formatBRLFromDollar(game.normalPrice)}</span>
             <mark>-{discount}%</mark>
           </div>
-          <p className="price-note">{formatDollar(game.salePrice)} na origem · R$ estimado</p>
+          <p className="price-note">{formatDollar(game.salePrice)} na origem - R$ estimado</p>
+
+          {savedGame?.targetPrice && (
+            <p className="price-note target-note">
+              Preco alvo: {Number(savedGame.targetPrice).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })}
+            </p>
+          )}
 
           <div className="details-actions">
             <a href={dealUrl} rel="noreferrer" target="_blank">
               Ver oferta
             </a>
             <button onClick={() => onToggleWishlist(game)} type="button">
-              {isWishlisted ? 'Remover da wishlist' : 'Adicionar à wishlist'}
+              {isWishlisted ? 'Remover da wishlist' : 'Adicionar a wishlist'}
             </button>
             <button onClick={() => onCreateAlert(game)} type="button">
-              Criar alerta
+              Definir preco alvo
             </button>
           </div>
         </div>
@@ -60,11 +70,11 @@ function GameDetails({
           <strong>{game.storeName}</strong>
         </article>
         <article>
-          <small>Preço original</small>
+          <small>Preco original</small>
           <strong>{formatBRLFromDollar(game.normalPrice)}</strong>
         </article>
         <article>
-          <small>Preço atual</small>
+          <small>Preco atual</small>
           <strong>{formatBRLFromDollar(game.salePrice)}</strong>
         </article>
         <article>

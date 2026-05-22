@@ -1,14 +1,19 @@
 import { dollarToBRL, formatBRLFromDollar } from '../utils/deals'
 
-function Dashboard({ alerts, deals, onNavigate, wishlist }) {
+function Dashboard({ deals, onNavigate, wishlist }) {
   const bestDiscount = deals.reduce((bestDeal, deal) => {
     if (!bestDeal) return deal
     return Number(deal.savings || 0) > Number(bestDeal.savings || 0) ? deal : bestDeal
   }, null)
 
-  const reachedAlerts = alerts.filter((alert) =>
-    dollarToBRL(alert.game.salePrice) <= Number(alert.targetPrice)
-  )
+  const reachedTargets = wishlist.filter((game) => {
+    if (!game.targetPrice) return false
+    return dollarToBRL(game.salePrice) <= Number(game.targetPrice)
+  })
+
+  const averageTarget = wishlist.length
+    ? wishlist.reduce((sum, game) => sum + Number(game.targetPrice || 0), 0) / wishlist.length
+    : 0
 
   return (
     <>
@@ -16,7 +21,7 @@ function Dashboard({ alerts, deals, onNavigate, wishlist }) {
         <div>
           <span className="tag">Resumo PC</span>
           <h2>Dashboard</h2>
-          <p>Um resumo rápido da sua wishlist, alertas e melhores oportunidades.</p>
+          <p>Resumo da wishlist, precos alvo e melhores oportunidades atuais.</p>
         </div>
 
         <button onClick={() => onNavigate('offers')} type="button">Ver ofertas</button>
@@ -28,12 +33,12 @@ function Dashboard({ alerts, deals, onNavigate, wishlist }) {
           <strong>{wishlist.length}</strong>
         </article>
         <article>
-          <small>Alertas ativos</small>
-          <strong>{alerts.length}</strong>
+          <small>Precos alvo</small>
+          <strong>{wishlist.filter((game) => game.targetPrice).length}</strong>
         </article>
         <article>
-          <small>Alertas no alvo</small>
-          <strong>{reachedAlerts.length}</strong>
+          <small>No alvo</small>
+          <strong>{reachedTargets.length}</strong>
         </article>
         <article>
           <small>Melhor desconto</small>
@@ -43,14 +48,30 @@ function Dashboard({ alerts, deals, onNavigate, wishlist }) {
 
       <section className="dashboard-feature">
         <div>
-          <h3>{bestDiscount?.displayTitle || bestDiscount?.title || 'Carregando ofertas'}</h3>
+          <h3>
+            {reachedTargets[0]?.displayTitle ||
+              reachedTargets[0]?.title ||
+              bestDiscount?.displayTitle ||
+              bestDiscount?.title ||
+              'Nenhum jogo preso'}
+          </h3>
           <p>
-            {bestDiscount
-              ? `Melhor oferta atual: ${formatBRLFromDollar(bestDiscount.salePrice)} em ${bestDiscount.storeName}.`
-              : 'Atualize as ofertas para montar seu resumo.'}
+            {reachedTargets[0]
+              ? `Este jogo ja esta abaixo do alvo: ${formatBRLFromDollar(reachedTargets[0].salePrice)}.`
+              : bestDiscount
+                ? `Melhor oferta atual: ${formatBRLFromDollar(bestDiscount.salePrice)} em ${bestDiscount.storeName}.`
+                : 'Atualize as ofertas para montar seu resumo.'}
           </p>
+          {averageTarget > 0 && (
+            <small className="currency-note">
+              Media dos seus alvos: {averageTarget.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })}
+            </small>
+          )}
         </div>
-        <button onClick={() => onNavigate('offers')} type="button">Abrir catálogo</button>
+        <button onClick={() => onNavigate('wishlist')} type="button">Abrir wishlist</button>
       </section>
     </>
   )

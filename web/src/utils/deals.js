@@ -119,14 +119,14 @@ export function enhanceDeal(deal) {
   }
 }
 
-export function selectBestDeals(deals, limit = 24, { searchTitle = '' } = {}) {
+export function selectBestDeals(deals, limit, { searchTitle = '' } = {}) {
   const bestDeals = deals.filter(hasRealDiscount).reduce((acc, deal) => {
     const key = normalizeTitle(deal.title)
     acc.set(key, pickBetterDeal(acc.get(key), deal))
     return acc
   }, new Map())
 
-  return Array.from(bestDeals.values())
+  const sortedDeals = Array.from(bestDeals.values())
     .map(enhanceDeal)
     .sort((a, b) => {
       const relevance =
@@ -137,5 +137,6 @@ export function selectBestDeals(deals, limit = 24, { searchTitle = '' } = {}) {
 
       return Number(b.savings || 0) - Number(a.savings || 0)
     })
-    .slice(0, limit)
+
+  return Number.isFinite(limit) ? sortedDeals.slice(0, limit) : sortedDeals
 }

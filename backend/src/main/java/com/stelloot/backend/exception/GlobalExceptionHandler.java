@@ -1,6 +1,8 @@
 package com.stelloot.backend.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,5 +26,12 @@ public class GlobalExceptionHandler {
                 );
 
         return errors;
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getReason());
+        return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
 }

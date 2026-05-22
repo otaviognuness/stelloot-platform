@@ -1,6 +1,7 @@
 package com.stelloot.backend.controller;
 
 import com.stelloot.backend.dto.CheapSharkDealDTO;
+import com.stelloot.backend.dto.CheapSharkGameDTO;
 import com.stelloot.backend.model.Deal;
 import com.stelloot.backend.service.DealService;
 import com.stelloot.backend.service.GameService;
@@ -28,9 +29,20 @@ public class DealController {
             @RequestParam(required = false) String storeID,
             @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "false") boolean forceRefresh
+            @RequestParam(defaultValue = "false") boolean forceRefresh,
+            @RequestParam(defaultValue = "false") boolean allPages,
+            @RequestParam(required = false) Integer maxPages,
+            @RequestParam(required = false) Boolean onSale
     ) {
-        return dealService.getDeals(title, storeID, pageSize, sortBy, forceRefresh);
+        return dealService.getDeals(title, storeID, pageSize, sortBy, forceRefresh, allPages, maxPages, onSale);
+    }
+
+    @GetMapping("/games/search")
+    public List<CheapSharkGameDTO> searchCheapSharkGames(
+            @RequestParam String title,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return dealService.searchGames(title, limit);
     }
 
     @PostMapping("/games/import")

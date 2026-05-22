@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import FilterTabs from '../components/FilterTabs'
 import GameCard from '../components/GameCard'
+import StoreSelector from '../components/StoreSelector'
 import { STORE_FILTERS } from '../config/stores'
 import {
   filterBySearch,
@@ -15,28 +16,33 @@ const HOME_TABS = [
 ]
 
 function Home({
+  currentUser,
   deals,
   error,
+  getWishlistedGame,
   isWishlisted,
   loading,
   onCreateAlert,
   onLogin,
+  onLogout,
   onNavigate,
   onOpenGame,
-  onRefreshDeals,
   onToggleWishlist,
   warning,
 }) {
   const [activeTab, setActiveTab] = useState('popular')
   const [search, setSearch] = useState('')
-  const [storeFilter, setStoreFilter] = useState('all')
-  const [visibleLimit, setVisibleLimit] = useState(8)
+  const [storeFilter, setStoreFilter] = useState('featured')
+  const visibleLimit = activeTab === 'popular' ? 8 : 12
 
   const visibleDeals = useMemo(() => {
     const filteredDeals = filterBySearch(filterByStore(deals, storeFilter), search)
 
     if (activeTab === 'popular') {
-      return [...filteredDeals]
+      const knownDeals = filteredDeals.filter((deal) => getPopularRank(deal) < 999)
+      const sourceDeals = knownDeals.length ? knownDeals : filteredDeals
+
+      return [...sourceDeals]
         .sort((a, b) => {
           const rank = getPopularRank(a) - getPopularRank(b)
           return rank !== 0 ? rank : Number(b.dealRating || 0) - Number(a.dealRating || 0)
@@ -60,48 +66,48 @@ function Home({
 
   function handleSearch(event) {
     event.preventDefault()
-    setVisibleLimit(12)
-  }
-
-  function handleTabChange(tab) {
-    setActiveTab(tab)
-    setVisibleLimit(tab === 'popular' ? 8 : 12)
-  }
-
-  function handleHeroDeals() {
-    setActiveTab('deals')
-    setVisibleLimit(12)
+    if (search.trim()) {
+      onNavigate('offers', { search: search.trim() })
+    }
   }
 
   return (
     <>
       <header className="topbar">
         <form className="search" onSubmit={handleSearch}>
-          <span className="search-icon">⌕</span>
+          <span className="search-icon">Search</span>
           <input
-            placeholder="Buscar jogo ou promoção..."
+            placeholder="Buscar jogo, oferta ou catalogo..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
           <button className="search-submit" type="submit">Buscar</button>
         </form>
 
-        <button onClick={onLogin} type="button">Entrar</button>
+        {currentUser ? (
+          <div className="user-menu">
+            <span aria-hidden="true">{currentUser.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+            <strong>{currentUser.name}</strong>
+            <button onClick={onLogout} type="button">Sair</button>
+          </div>
+        ) : (
+          <button onClick={onLogin} type="button">Entrar</button>
+        )}
       </header>
 
       <section className="hero">
         <div>
           <span className="tag">Ofertas PC em tempo real</span>
-          <h2>Encontre o menor preço dos seus jogos favoritos</h2>
+          <h2>Encontre o menor preco dos seus jogos favoritos</h2>
           <p>
-            Compare promoções de PC, salve jogos na wishlist e acompanhe
-            descontos com preço estimado em reais.
+            Compare promocoes de PC, salve jogos na wishlist e acompanhe
+            descontos com preco estimado em reais.
           </p>
 
           <div className="hero-actions">
-            <button onClick={handleHeroDeals} type="button">Ver promoções</button>
-            <button className="secondary" onClick={() => onNavigate('alerts')} type="button">
-              Criar alerta
+            <button onClick={() => onNavigate('offers')} type="button">Ver promocoes</button>
+            <button className="secondary" onClick={() => onNavigate('wishlist')} type="button">
+              Wishlist
             </button>
           </div>
         </div>
@@ -119,41 +125,35 @@ function Home({
 
       <section className="section-title">
         <div>
-          <h3>{activeTab === 'popular' ? 'Populares em promoção' : 'Melhores ofertas'}</h3>
+          <h3>{activeTab === 'popular' ? 'Populares em promocao' : 'Melhores ofertas'}</h3>
           <p>
             {activeTab === 'popular'
-              ? 'Jogos de PC conhecidos e ofertas com melhor avaliação.'
-              : 'Catálogo rápido com uma melhor oferta por jogo.'}
+              ? 'Jogos de PC conhecidos quando estiverem disponiveis na API.'
+              : 'Catalogo rapido com uma melhor oferta por jogo.'}
           </p>
           <small className="currency-note">
-            Valores em R$ são estimativas a partir do preço em dólar da CheapShark.
+            Valores em R$ sao estimativas a partir do preco em dolar da CheapShark.
           </small>
         </div>
 
         <button
           className="see-all-button"
-          onClick={() => {
-            if (visibleLimit >= 24) {
-              onRefreshDeals()
-            } else {
-              setVisibleLimit(24)
-            }
-          }}
+          onClick={() => onNavigate('offers')}
           type="button"
         >
-          {visibleLimit >= 24 ? 'Atualizar' : 'Ver todos'}
+          Ver todos
         </button>
       </section>
 
       <section className="deals-toolbar">
         <FilterTabs
           label="Categoria"
-          onChange={handleTabChange}
+          onChange={setActiveTab}
           options={HOME_TABS}
           value={activeTab}
         />
 
-        <FilterTabs
+        <StoreSelector
           label="Loja"
           onChange={setStoreFilter}
           options={STORE_FILTERS}
@@ -161,12 +161,12 @@ function Home({
         />
       </section>
 
-      {loading && <p className="status-message">Carregando promoções...</p>}
+      {loading && <p className="status-message">Carregando promocoes...</p>}
       {warning && !loading && <p className="status-message warning">{warning}</p>}
       {error && !loading && <p className="status-message error">{error}</p>}
 
       {!loading && !error && visibleDeals.length === 0 && (
-        <p className="status-message">Nenhuma promoção encontrada nessa seleção.</p>
+        <p className="status-message">Nenhuma promocao encontrada nessa selecao.</p>
       )}
 
       {!loading && !error && visibleDeals.length > 0 && (
@@ -179,6 +179,7 @@ function Home({
               onCreateAlert={onCreateAlert}
               onSelect={onOpenGame}
               onToggleWishlist={onToggleWishlist}
+              savedGame={getWishlistedGame?.(game)}
             />
           ))}
         </section>

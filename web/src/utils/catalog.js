@@ -1,11 +1,12 @@
 import { POPULAR_GAMES } from '../config/popularGames'
+import { getStoreFilter } from '../config/stores'
 import { dollarToBRL, isSameKnownGame } from './deals'
 
 export const PRICE_FILTERS = [
   { id: 'all', label: 'Todos' },
-  { id: 'under50', label: 'Até R$50', max: 50 },
-  { id: 'under100', label: 'Até R$100', max: 100 },
-  { id: 'under150', label: 'Até R$150', max: 150 },
+  { id: 'under50', label: 'Ate R$50', max: 50 },
+  { id: 'under100', label: 'Ate R$100', max: 100 },
+  { id: 'under150', label: 'Ate R$150', max: 150 },
 ]
 
 export const DISCOUNT_FILTERS = [
@@ -17,7 +18,7 @@ export const DISCOUNT_FILTERS = [
 
 export const SORT_OPTIONS = [
   { id: 'dealRating', label: 'Populares' },
-  { id: 'price', label: 'Menor preço' },
+  { id: 'price', label: 'Menor preco' },
   { id: 'discount', label: 'Maior desconto' },
   { id: 'title', label: 'A-Z' },
 ]
@@ -31,10 +32,12 @@ export function getPopularRank(game) {
 }
 
 export function filterByStore(deals, storeFilter) {
-  if (!storeFilter || storeFilter === 'all') return deals
+  if (!storeFilter || storeFilter === 'featured') return deals
 
-  const storeID = storeFilter === 'steam' ? '1' : '25'
-  return deals.filter((deal) => String(deal.storeID) === storeID)
+  const selectedStore = getStoreFilter(storeFilter)
+  if (!selectedStore.storeIDs.length) return deals
+
+  return deals.filter((deal) => selectedStore.storeIDs.includes(String(deal.storeID)))
 }
 
 export function filterBySearch(deals, search) {

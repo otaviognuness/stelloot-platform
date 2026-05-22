@@ -6,8 +6,9 @@ Front-end web da plataforma StelLoot, criado com React + Vite.
 
 - Exibir ofertas de jogos de PC.
 - Consumir a API Spring Boot em `backend/`.
-- Permitir navegacao entre explorar, ofertas, wishlist, alertas, dashboard e detalhes.
+- Permitir navegacao entre explorar, ofertas, wishlist, dashboard e detalhes.
 - Manter filtros por loja e busca de jogos.
+- Fazer login e cadastro pela API com JWT.
 
 ## Estrutura principal
 

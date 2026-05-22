@@ -2,9 +2,8 @@ import { STORE_FILTERS } from '../config/stores'
 import { selectBestDeals } from '../utils/deals'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-const CACHE_KEY = 'stelloot:backend:pc-deals'
+const CACHE_KEY = 'stelloot:backend:pc-deals:v2'
 const CACHE_TTL = 1000 * 60 * 12
-const DEFAULT_STORES = ['1', '25']
 
 function buildApiUrl(path, params) {
   const url = new URL(`${API_BASE_URL}${path}`)
@@ -40,11 +39,11 @@ function writeCachedDeals(deals) {
   )
 }
 
-async function fetchBackendDeals(params) {
-  const response = await fetch(buildApiUrl('/deals', params))
+async function fetchBackendDeals(params, path = '/deals') {
+  const response = await fetch(buildApiUrl(path, params))
 
   if (!response.ok) {
-    throw new Error('Erro ao buscar ofertas no backend')
+    throw new Error('Erro ao buscar dados no backend')
   }
 
   return response.json()
@@ -70,12 +69,13 @@ export async function getPcDeals({ forceRefresh = false } = {}) {
 
   try {
     const data = await fetchBackendDeals({
-      storeID: DEFAULT_STORES.join(','),
       pageSize: 60,
+      allPages: true,
+      maxPages: 0,
       sortBy: 'DealRating',
       forceRefresh,
     })
-    const deals = selectBestDeals(data, 60)
+    const deals = selectBestDeals(data)
 
     writeCachedDeals(deals)
 
@@ -90,7 +90,7 @@ export async function getPcDeals({ forceRefresh = false } = {}) {
         deals: cached.deals,
         fromCache: true,
         updatedAt: cached.createdAt,
-        warning: 'Usando ofertas salvas porque o backend não respondeu agora.',
+        warning: 'Usando ofertas salvas porque o backend nao respondeu agora.',
       }
     }
 
@@ -101,10 +101,37 @@ export async function getPcDeals({ forceRefresh = false } = {}) {
 export async function searchDeals(title) {
   const data = await fetchBackendDeals({
     title,
-    storeID: DEFAULT_STORES.join(','),
     pageSize: 60,
+    allPages: true,
+    maxPages: 0,
     sortBy: 'DealRating',
   })
 
-  return selectBestDeals(data, 60, { searchTitle: title })
+  return selectBestDeals(data, undefined, { searchTitle: title })
+}
+
+export async function searchGames(title) {
+  const data = await fetchBackendDeals({
+    title,
+    limit: 60,
+  }, '/games/search')
+
+  return data.map((game) => ({
+    gameID: game.gameID,
+    steamAppID: game.steamAppID,
+    dealID: game.cheapestDealID || `catalog-${game.gameID}`,
+    storeID: 'catalog',
+    title: game.external,
+    salePrice: game.cheapest || '0',
+    normalPrice: game.cheapest || '0',
+    savings: '0',
+    dealRating: '0',
+    steamRatingText: '',
+    thumb: game.thumb,
+    storeName: 'Catalogo CheapShark',
+    dealUrl: game.cheapestDealID
+      ? `https://www.cheapshark.com/redirect?dealID=${game.cheapestDealID}`
+      : 'https://www.cheapshark.com/',
+    catalogOnly: true,
+  }))
 }

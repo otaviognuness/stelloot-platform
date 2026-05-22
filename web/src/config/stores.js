@@ -22,12 +22,21 @@ export const STORE_NAMES = {
 }
 
 export const STORE_FILTERS = [
-  { id: 'all', label: 'Todas', storeIDs: ['1', '25'] },
+  { id: 'featured', label: 'Vitrine PC', storeIDs: [] },
   { id: 'steam', label: 'Steam', storeIDs: ['1'] },
   { id: 'epic', label: 'Epic', storeIDs: ['25'] },
+  { id: 'gog', label: 'GOG', storeIDs: ['7'] },
+  { id: 'humble', label: 'Humble', storeIDs: ['11'] },
+  { id: 'ubisoft', label: 'Ubisoft', storeIDs: ['13'] },
+  { id: 'fanatical', label: 'Fanatical', storeIDs: ['15'] },
+  { id: 'gamebillet', label: 'GameBillet', storeIDs: ['23'] },
+  { id: 'gamesplanet', label: 'Gamesplanet', storeIDs: ['27'] },
+  { id: 'indiegala', label: 'IndieGala', storeIDs: ['30'] },
+  { id: 'blizzard', label: 'Blizzard', storeIDs: ['31'] },
+  { id: 'dlgamer', label: 'DLGamer', storeIDs: ['33'] },
 ]
 
-export function getStoreFilter(filterId = 'all') {
+export function getStoreFilter(filterId = 'featured') {
   return STORE_FILTERS.find((filter) => filter.id === filterId) || STORE_FILTERS[0]
 }
 
