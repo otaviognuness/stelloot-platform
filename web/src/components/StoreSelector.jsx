@@ -1,38 +1,70 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-function StoreSelector({ label = 'Lojas', options, value, onChange }) {
-  const railRef = useRef(null)
+function StoreSelector({ className = '', label = 'Loja', options, value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectorRef = useRef(null)
+  const selectedOption = options.find((option) => option.id === value) || options[0]
 
-  function scrollRail(direction) {
-    railRef.current?.scrollBy({
-      left: direction * 220,
-      behavior: 'smooth',
-    })
+  useEffect(() => {
+    if (!isOpen) return undefined
+
+    function handlePointerDown(event) {
+      if (!selectorRef.current?.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  function handleSelect(optionId) {
+    onChange(optionId)
+    setIsOpen(false)
   }
 
   return (
-    <section className="store-selector" aria-label={label}>
-      <div className="store-selector-head">
-        <small>{label}</small>
-        <div className="store-selector-controls" aria-hidden="true">
-          <button onClick={() => scrollRail(-1)} type="button">&lt;</button>
-          <button onClick={() => scrollRail(1)} type="button">&gt;</button>
-        </div>
-      </div>
+    <div className={`store-select ${className}`.trim()} ref={selectorRef}>
+      <span className="store-select-label">{label}</span>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`store-select-trigger${isOpen ? ' open' : ''}`}
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        {selectedOption.label}
+      </button>
 
-      <div className="store-rail" ref={railRef}>
-        {options.map((option) => (
-          <button
-            className={`store-chip${option.id === value ? ' active' : ''}`}
-            key={option.id}
-            onClick={() => onChange(option.id)}
-            type="button"
-          >
-            <span>{option.label}</span>
-          </button>
-        ))}
-      </div>
-    </section>
+      {isOpen && (
+        <div aria-label={label} className="store-select-menu" role="listbox">
+          {options.map((option) => (
+            <button
+              aria-selected={option.id === value}
+              className={option.id === value ? 'selected' : ''}
+              key={option.id}
+              onClick={() => handleSelect(option.id)}
+              role="option"
+              type="button"
+            >
+              {option.label}
+              {option.id === value && <span aria-hidden="true">&#10003;</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

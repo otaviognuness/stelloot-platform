@@ -16,7 +16,7 @@ function Wishlist({
           <span className="tag">Biblioteca desejada</span>
           <h2>Wishlist</h2>
           <p>
-            Jogos salvos com preco alvo. Quando o preco atual ficar abaixo do
+            Jogos salvos com preço alvo. Quando o preço atual ficar abaixo do
             alvo, o dashboard destaca a oportunidade.
           </p>
         </div>
@@ -27,7 +27,7 @@ function Wishlist({
       {games.length === 0 ? (
         <section className="empty-state">
           <h3>Nenhum jogo salvo ainda</h3>
-          <p>Adicione jogos pela pagina Explorar ou Ofertas para montar sua lista.</p>
+          <p>Adicione jogos pela página Explorar ou Ofertas para montar sua lista.</p>
           <button onClick={() => onNavigate('offers')} type="button">Explorar ofertas</button>
         </section>
       ) : (

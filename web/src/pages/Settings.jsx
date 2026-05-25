@@ -1,60 +1,89 @@
+import { useEffect } from 'react'
+
 const THEMES = [
-  {
-    id: 'default',
-    name: 'StelLoot padrao',
-    description: 'Visual gamer original, com neon azul, roxo e verde.',
-  },
-  {
-    id: 'black',
-    name: 'Preto',
-    description: 'Tema preto e branco para apresentacao mais limpa.',
-  },
-  {
-    id: 'light',
-    name: 'Branco',
-    description: 'Tema claro para ambientes com muita luz.',
-  },
+  { id: 'default', name: 'StelLoot' },
+  { id: 'black', name: 'Preto' },
+  { id: 'light', name: 'Branco' },
 ]
 
-function Settings({ theme, onThemeChange }) {
+function Settings({ currentUser, theme, onClose, onThemeChange }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   return (
-    <section className="settings-page">
-      <header className="page-heading">
-        <div>
-          <span className="tag">Preferencias</span>
-          <h2>Configuracoes</h2>
-          <p>
-            Ajuste o visual do StelLoot sem perder o layout principal da
-            plataforma.
-          </p>
-        </div>
-      </header>
+    <div
+      className="settings-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <section
+        aria-labelledby="settings-title"
+        aria-modal="true"
+        className="settings-modal"
+        role="dialog"
+      >
+        <header className="settings-header">
+          <div>
+            <small>Preferências</small>
+            <h2 id="settings-title">Configurações</h2>
+          </div>
+          <button aria-label="Fechar configurações" onClick={onClose} type="button">
+            &times;
+          </button>
+        </header>
 
-      <section className="settings-panel">
-        <div>
-          <h3>Tema do site</h3>
-          <p>
-            O padrao mantem a identidade original. Os temas preto e branco ficam
-            salvos neste navegador.
-          </p>
-        </div>
+        <div className="settings-content">
+          <section className="settings-panel">
+            <h3>Tema</h3>
+            <div className="theme-options">
+              {THEMES.map((option) => (
+                <button
+                  aria-pressed={theme === option.id}
+                  className={`theme-option ${theme === option.id ? 'active' : ''}`}
+                  key={option.id}
+                  onClick={() => onThemeChange(option.id)}
+                  type="button"
+                >
+                  <span className={`theme-preview ${option.id}`} aria-hidden="true" />
+                  <strong>{option.name}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
 
-        <div className="theme-options">
-          {THEMES.map((option) => (
-            <button
-              className={`theme-option ${theme === option.id ? 'active' : ''}`}
-              key={option.id}
-              onClick={() => onThemeChange(option.id)}
-              type="button"
-            >
-              <span className={`theme-preview ${option.id}`} aria-hidden="true" />
-              <strong>{option.name}</strong>
-              <small>{option.description}</small>
-            </button>
-          ))}
+          <aside className="settings-info">
+            <h3>Informações</h3>
+            <dl>
+              <div>
+                <dt>Conta</dt>
+                <dd>{currentUser?.name || 'Visitante'}</dd>
+              </div>
+              <div>
+                <dt>Plataforma</dt>
+                <dd>PC</dd>
+              </div>
+              <div>
+                <dt>Fonte de ofertas</dt>
+                <dd>CheapShark</dd>
+              </div>
+              <div>
+                <dt>Moeda exibida</dt>
+                <dd>R$ estimado</dd>
+              </div>
+            </dl>
+          </aside>
         </div>
       </section>
-    </section>
+    </div>
   )
 }
 

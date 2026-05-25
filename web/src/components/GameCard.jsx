@@ -2,9 +2,11 @@ import {
   formatBRLFromDollar,
   formatDollar,
   getDealUrl,
+  getGameArtwork,
 } from '../utils/deals'
 
 function GameCard({
+  animateIn = false,
   game,
   isWishlisted = false,
   onCreateAlert,
@@ -15,6 +17,7 @@ function GameCard({
   const discount = Math.round(Number(game.savings || 0))
   const title = game.displayTitle || game.title
   const dealUrl = game.dealUrl || getDealUrl(game.dealID)
+  const artwork = getGameArtwork(game)
   const hasPrice = Number(game.salePrice || 0) > 0
   const hasOriginalPrice = Number(game.normalPrice || 0) > Number(game.salePrice || 0)
 
@@ -31,17 +34,25 @@ function GameCard({
 
   return (
     <article
-      className={`game-card${game.catalogOnly ? ' catalog-card' : ''}`}
+      className={`game-card${game.catalogOnly ? ' catalog-card' : ''}${animateIn ? ' game-card-new' : ''}`}
       onClick={handleOpenDetails}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
     >
-      <div
-        className="game-cover"
-        style={{ backgroundImage: `url(${game.thumb})` }}
-      >
-        <span>{discount > 0 ? `-${discount}%` : 'Catalogo'}</span>
+      <div className="game-cover">
+        <img
+          alt=""
+          decoding="async"
+          loading="lazy"
+          onError={(event) => {
+            if (game.thumb && event.currentTarget.src !== game.thumb) {
+              event.currentTarget.src = game.thumb
+            }
+          }}
+          src={artwork}
+        />
+        <span>{discount > 0 ? `-${discount}%` : 'Catálogo'}</span>
       </div>
 
       <div className="game-info">
@@ -49,13 +60,13 @@ function GameCard({
         <h4>{title}</h4>
 
         <div className="prices">
-          <strong>{hasPrice ? formatBRLFromDollar(game.salePrice) : 'Ver preco'}</strong>
+          <strong>{hasPrice ? formatBRLFromDollar(game.salePrice) : 'Ver preço'}</strong>
           {hasOriginalPrice && <span>{formatBRLFromDollar(game.normalPrice)}</span>}
         </div>
         {hasPrice && <em className="price-note">{formatDollar(game.salePrice)} na origem</em>}
         {game.catalogOnly && (
           <em className="price-note target-note">
-            Resultado de catalogo, mesmo sem promocao ativa.
+            Resultado de catálogo, mesmo sem promoção ativa.
           </em>
         )}
         {savedGame?.targetPrice && (
@@ -69,14 +80,14 @@ function GameCard({
 
         <div className="game-actions">
           <button
-            className={isWishlisted ? 'active-action' : ''}
+            className={isWishlisted ? 'remove-action' : ''}
             type="button"
             onClick={(event) => {
               event.stopPropagation()
               onToggleWishlist?.(game)
             }}
           >
-            {isWishlisted ? 'Salvo' : 'Wishlist'}
+            {isWishlisted ? 'Remover' : 'Wishlist'}
           </button>
           <button
             type="button"
@@ -85,7 +96,7 @@ function GameCard({
               onCreateAlert?.(game)
             }}
           >
-            Preco alvo
+            {savedGame?.targetPrice ? 'Editar alvo' : 'Preço alvo'}
           </button>
           <a
             href={dealUrl}

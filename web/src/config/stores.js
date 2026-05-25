@@ -22,7 +22,7 @@ export const STORE_NAMES = {
 }
 
 export const STORE_FILTERS = [
-  { id: 'featured', label: 'Vitrine PC', storeIDs: [] },
+  { id: 'all', label: 'Todas', storeIDs: [] },
   { id: 'steam', label: 'Steam', storeIDs: ['1'] },
   { id: 'epic', label: 'Epic', storeIDs: ['25'] },
   { id: 'gog', label: 'GOG', storeIDs: ['7'] },
@@ -36,7 +36,7 @@ export const STORE_FILTERS = [
   { id: 'dlgamer', label: 'DLGamer', storeIDs: ['33'] },
 ]
 
-export function getStoreFilter(filterId = 'featured') {
+export function getStoreFilter(filterId = 'all') {
   return STORE_FILTERS.find((filter) => filter.id === filterId) || STORE_FILTERS[0]
 }
 

@@ -2,8 +2,9 @@ import { STORE_FILTERS } from '../config/stores'
 import { selectBestDeals } from '../utils/deals'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-const CACHE_KEY = 'stelloot:backend:pc-deals:v2'
+const CACHE_KEY = 'stelloot:backend:pc-deals:v3'
 const CACHE_TTL = 1000 * 60 * 12
+export const DEALS_PAGE_SIZE = 24
 
 function buildApiUrl(path, params) {
   const url = new URL(`${API_BASE_URL}${path}`)
@@ -55,33 +56,39 @@ export function getCachedPcDeals() {
   return readCachedDeals()?.deals || []
 }
 
-export async function getPcDeals({ forceRefresh = false } = {}) {
-  const cached = readCachedDeals()
+export async function getPcDeals({ forceRefresh = false, pageNumber = 0 } = {}) {
+  const isFirstPage = pageNumber === 0
+  const cached = isFirstPage ? readCachedDeals() : null
   const hasFreshCache = cached && Date.now() - cached.createdAt < CACHE_TTL
 
   if (!forceRefresh && hasFreshCache) {
     return {
       deals: cached.deals,
       fromCache: true,
+      hasMore: true,
+      pageNumber: 0,
       updatedAt: cached.createdAt,
     }
   }
 
   try {
     const data = await fetchBackendDeals({
-      pageSize: 60,
-      allPages: true,
-      maxPages: 0,
+      pageSize: DEALS_PAGE_SIZE,
+      pageNumber,
       sortBy: 'DealRating',
-      forceRefresh,
+      forceRefresh: isFirstPage && forceRefresh,
     })
     const deals = selectBestDeals(data)
 
-    writeCachedDeals(deals)
+    if (isFirstPage) {
+      writeCachedDeals(deals)
+    }
 
     return {
       deals,
       fromCache: false,
+      hasMore: data.length >= DEALS_PAGE_SIZE,
+      pageNumber,
       updatedAt: Date.now(),
     }
   } catch (error) {
@@ -89,8 +96,10 @@ export async function getPcDeals({ forceRefresh = false } = {}) {
       return {
         deals: cached.deals,
         fromCache: true,
+        hasMore: true,
+        pageNumber: 0,
         updatedAt: cached.createdAt,
-        warning: 'Usando ofertas salvas porque o backend nao respondeu agora.',
+        warning: 'Usando ofertas salvas porque o backend não respondeu agora.',
       }
     }
 
@@ -98,12 +107,11 @@ export async function getPcDeals({ forceRefresh = false } = {}) {
   }
 }
 
-export async function searchDeals(title) {
+export async function searchDeals(title, pageNumber = 0) {
   const data = await fetchBackendDeals({
     title,
-    pageSize: 60,
-    allPages: true,
-    maxPages: 0,
+    pageSize: DEALS_PAGE_SIZE,
+    pageNumber,
     sortBy: 'DealRating',
   })
 
@@ -113,7 +121,7 @@ export async function searchDeals(title) {
 export async function searchGames(title) {
   const data = await fetchBackendDeals({
     title,
-    limit: 60,
+    limit: 30,
   }, '/games/search')
 
   return data.map((game) => ({
@@ -128,7 +136,7 @@ export async function searchGames(title) {
     dealRating: '0',
     steamRatingText: '',
     thumb: game.thumb,
-    storeName: 'Catalogo CheapShark',
+    storeName: 'Catálogo CheapShark',
     dealUrl: game.cheapestDealID
       ? `https://www.cheapshark.com/redirect?dealID=${game.cheapestDealID}`
       : 'https://www.cheapshark.com/',

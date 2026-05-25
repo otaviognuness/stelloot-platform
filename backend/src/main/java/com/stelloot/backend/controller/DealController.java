@@ -28,13 +28,14 @@ public class DealController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String storeID,
             @RequestParam(required = false) Integer pageSize,
+            @RequestParam(defaultValue = "0") Integer pageNumber,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "false") boolean forceRefresh,
             @RequestParam(defaultValue = "false") boolean allPages,
             @RequestParam(required = false) Integer maxPages,
             @RequestParam(required = false) Boolean onSale
     ) {
-        return dealService.getDeals(title, storeID, pageSize, sortBy, forceRefresh, allPages, maxPages, onSale);
+        return dealService.getDeals(title, storeID, pageSize, pageNumber, sortBy, forceRefresh, allPages, maxPages, onSale);
     }
 
     @GetMapping("/games/search")

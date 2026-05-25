@@ -2,6 +2,7 @@ import {
   formatBRLFromDollar,
   formatDollar,
   getDealUrl,
+  getGameArtwork,
 } from '../utils/deals'
 
 function GameDetails({
@@ -19,6 +20,7 @@ function GameDetails({
   const title = game.displayTitle || game.title
   const discount = Math.round(Number(game.savings || 0))
   const dealUrl = game.dealUrl || getDealUrl(game.dealID)
+  const artwork = getGameArtwork(game)
 
   return (
     <section className="details-page">
@@ -26,10 +28,18 @@ function GameDetails({
         Voltar
       </button>
 
-      <div
-        className="details-hero"
-        style={{ backgroundImage: `url(${game.thumb})` }}
-      >
+      <div className="details-hero">
+        <img
+          alt=""
+          className="details-artwork"
+          decoding="async"
+          onError={(event) => {
+            if (game.thumb && event.currentTarget.src !== game.thumb) {
+              event.currentTarget.src = game.thumb
+            }
+          }}
+          src={artwork}
+        />
         <div className="details-hero-overlay">
           <span>{game.storeName} - PC</span>
           <h2>{title}</h2>
@@ -43,7 +53,7 @@ function GameDetails({
 
           {savedGame?.targetPrice && (
             <p className="price-note target-note">
-              Preco alvo: {Number(savedGame.targetPrice).toLocaleString('pt-BR', {
+              Preço alvo: {Number(savedGame.targetPrice).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })}
@@ -54,11 +64,15 @@ function GameDetails({
             <a href={dealUrl} rel="noreferrer" target="_blank">
               Ver oferta
             </a>
-            <button onClick={() => onToggleWishlist(game)} type="button">
+            <button
+              className={isWishlisted ? 'remove-action' : ''}
+              onClick={() => onToggleWishlist(game)}
+              type="button"
+            >
               {isWishlisted ? 'Remover da wishlist' : 'Adicionar a wishlist'}
             </button>
             <button onClick={() => onCreateAlert(game)} type="button">
-              Definir preco alvo
+              {savedGame?.targetPrice ? 'Alterar preço alvo' : 'Definir preço alvo'}
             </button>
           </div>
         </div>
@@ -70,11 +84,11 @@ function GameDetails({
           <strong>{game.storeName}</strong>
         </article>
         <article>
-          <small>Preco original</small>
+          <small>Preço original</small>
           <strong>{formatBRLFromDollar(game.normalPrice)}</strong>
         </article>
         <article>
-          <small>Preco atual</small>
+          <small>Preço atual</small>
           <strong>{formatBRLFromDollar(game.salePrice)}</strong>
         </article>
         <article>

@@ -4,9 +4,9 @@ import { dollarToBRL, isSameKnownGame } from './deals'
 
 export const PRICE_FILTERS = [
   { id: 'all', label: 'Todos' },
-  { id: 'under50', label: 'Ate R$50', max: 50 },
-  { id: 'under100', label: 'Ate R$100', max: 100 },
-  { id: 'under150', label: 'Ate R$150', max: 150 },
+  { id: 'under50', label: 'Até R$50', max: 50 },
+  { id: 'under100', label: 'Até R$100', max: 100 },
+  { id: 'under150', label: 'Até R$150', max: 150 },
 ]
 
 export const DISCOUNT_FILTERS = [
@@ -18,7 +18,7 @@ export const DISCOUNT_FILTERS = [
 
 export const SORT_OPTIONS = [
   { id: 'dealRating', label: 'Populares' },
-  { id: 'price', label: 'Menor preco' },
+  { id: 'price', label: 'Menor preço' },
   { id: 'discount', label: 'Maior desconto' },
   { id: 'title', label: 'A-Z' },
 ]
@@ -32,7 +32,7 @@ export function getPopularRank(game) {
 }
 
 export function filterByStore(deals, storeFilter) {
-  if (!storeFilter || storeFilter === 'featured') return deals
+  if (!storeFilter || storeFilter === 'all') return deals
 
   const selectedStore = getStoreFilter(storeFilter)
   if (!selectedStore.storeIDs.length) return deals

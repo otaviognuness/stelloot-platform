@@ -67,9 +67,9 @@ export default function LoginCard({ onSuccess, onBack }) {
   async function handleLogin() {
     const errors = {}
     if (!loginEmail) errors.email = 'Informe seu email'
-    else if (!isValidEmail(loginEmail)) errors.email = 'Email invalido'
+    else if (!isValidEmail(loginEmail)) errors.email = 'Email inválido'
     if (!loginPass) errors.pass = 'Informe sua senha'
-    else if (loginPass.length < 8) errors.pass = 'Minimo 8 caracteres'
+    else if (loginPass.length < 8) errors.pass = 'Mínimo de 8 caracteres'
 
     if (Object.keys(errors).length) {
       setLoginErrs(errors)
@@ -93,11 +93,11 @@ export default function LoginCard({ onSuccess, onBack }) {
     const errors = {}
     if (!regName) errors.name = 'Informe seu nome'
     if (!regEmail) errors.email = 'Informe seu email'
-    else if (!isValidEmail(regEmail)) errors.email = 'Email invalido'
+    else if (!isValidEmail(regEmail)) errors.email = 'Email inválido'
     if (!regPass) errors.pass = 'Crie uma senha'
-    else if (regPass.length < 8) errors.pass = 'Minimo 8 caracteres'
+    else if (regPass.length < 8) errors.pass = 'Mínimo de 8 caracteres'
     if (!regPass2) errors.pass2 = 'Confirme a senha'
-    else if (regPass !== regPass2) errors.pass2 = 'As senhas nao coincidem'
+    else if (regPass !== regPass2) errors.pass2 = 'As senhas não coincidem'
 
     if (Object.keys(errors).length) {
       setRegErrs(errors)
@@ -122,13 +122,13 @@ export default function LoginCard({ onSuccess, onBack }) {
   }
 
   function handleGoogle() {
-    alert('Google Auth precisa de um Client ID do Google Cloud. O login com JWT ja esta pronto.')
+    alert('Google Auth precisa de um Client ID do Google Cloud. O login com JWT já está pronto.')
   }
 
   function handleForgot() {
     setLoginErrs((errors) => ({
       ...errors,
-      form: 'Recuperacao de senha fica para uma proxima etapa.',
+      form: 'Recuperação de senha fica para uma próxima etapa.',
     }))
   }
 
@@ -145,7 +145,7 @@ export default function LoginCard({ onSuccess, onBack }) {
         <h2>{tab === 'login' ? 'Entrar na StelLoot' : 'Criar sua conta'}</h2>
         <p>
           {tab === 'login'
-            ? 'Acesse sua wishlist, precos alvo e dashboard gamer.'
+            ? 'Acesse sua wishlist, preços alvo e dashboard gamer.'
             : 'Crie sua conta para salvar jogos e acompanhar oportunidades.'}
         </p>
 
@@ -190,7 +190,7 @@ export default function LoginCard({ onSuccess, onBack }) {
                   setLoginPass(event.target.value)
                   setLoginErrs((errors) => ({ ...errors, pass: '', form: '' }))
                 }}
-                placeholder="Minimo 8 caracteres"
+                placeholder="Mínimo de 8 caracteres"
                 value={loginPass}
               />
               <FieldError message={loginErrs.pass} />
@@ -249,7 +249,7 @@ export default function LoginCard({ onSuccess, onBack }) {
                   setRegPass(event.target.value)
                   setRegErrs((errors) => ({ ...errors, pass: '', form: '' }))
                 }}
-                placeholder="Minimo 8 caracteres"
+                placeholder="Mínimo de 8 caracteres"
                 value={regPass}
               />
               <FieldError message={regErrs.pass} />

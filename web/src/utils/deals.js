@@ -39,6 +39,14 @@ export function getDealUrl(dealID) {
   return `https://www.cheapshark.com/redirect?dealID=${dealID}`
 }
 
+export function getGameArtwork(game) {
+  if (game?.steamAppID) {
+    return `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.steamAppID}/header.jpg`
+  }
+
+  return game?.thumb || ''
+}
+
 export function getGameKey(game) {
   return String(game?.gameID || game?.steamAppID || normalizeTitle(game?.title || ''))
 }

@@ -33,20 +33,23 @@ public class DealService {
     private Instant cacheExpiresAt = Instant.EPOCH;
 
     public List<CheapSharkDealDTO> getDeals() {
-        return getDeals(null, null, DEFAULT_PAGE_SIZE, "DealRating", false, true, DEFAULT_MAX_PAGES, true);
+        return getDeals(null, null, DEFAULT_PAGE_SIZE, 0, "DealRating", false, true, DEFAULT_MAX_PAGES, true);
     }
 
     public List<CheapSharkDealDTO> getDeals(
             String title,
             String storeID,
             Integer pageSize,
+            Integer pageNumber,
             String sortBy,
             boolean forceRefresh,
             boolean allPages,
             Integer maxPages,
             Boolean onSale
     ) {
-        if (!forceRefresh && isBlank(title) && isBlank(storeID) && Instant.now().isBefore(cacheExpiresAt) && !cachedDeals.isEmpty()) {
+        int safePageNumber = pageNumber == null ? 0 : Math.max(pageNumber, 0);
+
+        if (!forceRefresh && safePageNumber == 0 && isBlank(title) && isBlank(storeID) && Instant.now().isBefore(cacheExpiresAt) && !cachedDeals.isEmpty()) {
             return cachedDeals;
         }
 
@@ -54,9 +57,9 @@ public class DealService {
             int safePageSize = pageSize == null ? DEFAULT_PAGE_SIZE : Math.min(Math.max(pageSize, 1), DEFAULT_PAGE_SIZE);
             List<CheapSharkDealDTO> safeDeals = allPages
                     ? fetchAllDealPages(title, storeID, safePageSize, sortBy, maxPages, onSale)
-                    : fetchDealPage(title, storeID, safePageSize, sortBy, 0, onSale).deals();
+                    : fetchDealPage(title, storeID, safePageSize, sortBy, safePageNumber, onSale).deals();
 
-            if (isBlank(title) && isBlank(storeID)) {
+            if (safePageNumber == 0 && isBlank(title) && isBlank(storeID)) {
                 cachedDeals = safeDeals;
                 cacheExpiresAt = Instant.now().plus(CACHE_TTL);
             }

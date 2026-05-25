@@ -32,7 +32,7 @@ function Home({
 }) {
   const [activeTab, setActiveTab] = useState('popular')
   const [search, setSearch] = useState('')
-  const [storeFilter, setStoreFilter] = useState('featured')
+  const [storeFilter, setStoreFilter] = useState('all')
   const visibleLimit = activeTab === 'popular' ? 8 : 12
 
   const visibleDeals = useMemo(() => {
@@ -77,7 +77,7 @@ function Home({
         <form className="search" onSubmit={handleSearch}>
           <span className="search-icon">Search</span>
           <input
-            placeholder="Buscar jogo, oferta ou catalogo..."
+            placeholder="Buscar jogo, oferta ou catálogo..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -98,14 +98,14 @@ function Home({
       <section className="hero">
         <div>
           <span className="tag">Ofertas PC em tempo real</span>
-          <h2>Encontre o menor preco dos seus jogos favoritos</h2>
+          <h2>Encontre o menor preço dos seus jogos favoritos</h2>
           <p>
-            Compare promocoes de PC, salve jogos na wishlist e acompanhe
-            descontos com preco estimado em reais.
+            Compare promoções de PC, salve jogos na wishlist e acompanhe
+            descontos com preço estimado em reais.
           </p>
 
           <div className="hero-actions">
-            <button onClick={() => onNavigate('offers')} type="button">Ver promocoes</button>
+            <button onClick={() => onNavigate('offers')} type="button">Ver promoções</button>
             <button className="secondary" onClick={() => onNavigate('wishlist')} type="button">
               Wishlist
             </button>
@@ -125,14 +125,14 @@ function Home({
 
       <section className="section-title">
         <div>
-          <h3>{activeTab === 'popular' ? 'Populares em promocao' : 'Melhores ofertas'}</h3>
+          <h3>{activeTab === 'popular' ? 'Populares em promoção' : 'Melhores ofertas'}</h3>
           <p>
             {activeTab === 'popular'
               ? 'Jogos de PC conhecidos quando estiverem disponiveis na API.'
-              : 'Catalogo rapido com uma melhor oferta por jogo.'}
+              : 'Catálogo rápido com uma melhor oferta por jogo.'}
           </p>
           <small className="currency-note">
-            Valores em R$ sao estimativas a partir do preco em dolar da CheapShark.
+            Valores em R$ são estimativas a partir do preço em dólar da CheapShark.
           </small>
         </div>
 
@@ -161,12 +161,12 @@ function Home({
         />
       </section>
 
-      {loading && <p className="status-message">Carregando promocoes...</p>}
+      {loading && <p className="status-message">Carregando promoções...</p>}
       {warning && !loading && <p className="status-message warning">{warning}</p>}
       {error && !loading && <p className="status-message error">{error}</p>}
 
       {!loading && !error && visibleDeals.length === 0 && (
-        <p className="status-message">Nenhuma promocao encontrada nessa selecao.</p>
+        <p className="status-message">Nenhuma promoção encontrada nessa seleção.</p>
       )}
 
       {!loading && !error && visibleDeals.length > 0 && (

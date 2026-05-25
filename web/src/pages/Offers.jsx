@@ -34,23 +34,28 @@ function Offers({
   deals,
   error,
   getWishlistedGame,
+  hasMoreDeals,
   initialSearch = '',
   isWishlisted,
   loading,
+  loadingMore,
   onCreateAlert,
+  onLoadMoreDeals,
   onOpenGame,
   onRefreshDeals,
   onToggleWishlist,
   warning,
 }) {
   const [search, setSearch] = useState(initialSearch)
-  const [storeFilter, setStoreFilter] = useState('featured')
+  const [storeFilter, setStoreFilter] = useState('all')
   const [priceFilter, setPriceFilter] = useState('all')
   const [discountFilter, setDiscountFilter] = useState('all')
   const [sortBy, setSortBy] = useState('dealRating')
   const [catalogResults, setCatalogResults] = useState([])
   const [catalogQuery, setCatalogQuery] = useState('')
   const [catalogLoading, setCatalogLoading] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(24)
+  const [animatedBatchStart, setAnimatedBatchStart] = useState(null)
 
   useEffect(() => {
     const term = search.trim()
@@ -102,16 +107,59 @@ function Offers({
 
     return sortDeals(filtered, sortBy)
   }, [catalogQuery, catalogResults, deals, discountFilter, priceFilter, search, sortBy, storeFilter])
+  const visibleDeals = filteredDeals.slice(0, visibleCount)
+  const hasHiddenResults = visibleDeals.length < filteredDeals.length
+
+  function handleSearchChange(event) {
+    setSearch(event.target.value)
+    setVisibleCount(24)
+    setAnimatedBatchStart(null)
+  }
+
+  function handleStoreChange(value) {
+    setStoreFilter(value)
+    setVisibleCount(24)
+    setAnimatedBatchStart(null)
+  }
+
+  function handlePriceChange(value) {
+    setPriceFilter(value)
+    setVisibleCount(24)
+    setAnimatedBatchStart(null)
+  }
+
+  function handleDiscountChange(value) {
+    setDiscountFilter(value)
+    setVisibleCount(24)
+    setAnimatedBatchStart(null)
+  }
+
+  async function handleLoadMoreResults() {
+    if (hasHiddenResults) {
+      setAnimatedBatchStart(visibleCount)
+      setVisibleCount((current) => current + 24)
+      return
+    }
+
+    if (!search.trim() && hasMoreDeals) {
+      const currentCount = visibleDeals.length
+      await onLoadMoreDeals()
+      setAnimatedBatchStart(currentCount)
+      setVisibleCount((current) => current + 24)
+    }
+  }
+
+  const canLoadMore = hasHiddenResults || (!search.trim() && hasMoreDeals)
 
   return (
     <>
       <header className="page-heading">
         <div>
-            <span className="tag">Catalogo PC</span>
+            <span className="tag">Catálogo PC</span>
             <h2>Ofertas de jogos</h2>
             <p>
-            Filtre promocoes por loja, preco e desconto. A busca tambem traz
-            jogos do catalogo da CheapShark mesmo quando nao ha desconto ativo.
+            Filtre promoções por loja, preço e desconto. A busca também traz
+            jogos do catálogo da CheapShark mesmo quando não há desconto ativo.
             </p>
         </div>
 
@@ -122,9 +170,9 @@ function Offers({
         <form className="search catalog-search" onSubmit={(event) => event.preventDefault()}>
           <span className="search-icon">Search</span>
           <input
-            placeholder="Buscar no catalogo..."
+            placeholder="Buscar no catálogo..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={handleSearchChange}
           />
         </form>
 
@@ -132,16 +180,16 @@ function Offers({
           <div className="store-filter-group">
             <StoreSelector
               label="Loja"
-              onChange={setStoreFilter}
+              onChange={handleStoreChange}
               options={STORE_FILTERS}
               value={storeFilter}
             />
           </div>
           <div>
-            <small>Preco</small>
+            <small>Preço</small>
             <FilterTabs
-              label="Preco"
-              onChange={setPriceFilter}
+              label="Preço"
+              onChange={handlePriceChange}
               options={PRICE_FILTERS}
               value={priceFilter}
             />
@@ -150,9 +198,18 @@ function Offers({
             <small>Desconto</small>
             <FilterTabs
               label="Desconto"
-              onChange={setDiscountFilter}
+              onChange={handleDiscountChange}
               options={DISCOUNT_FILTERS}
               value={discountFilter}
+            />
+          </div>
+          <div className="sort-filter-group">
+            <StoreSelector
+              className="sort-select"
+              label="Ordenar por"
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              value={sortBy}
             />
           </div>
         </div>
@@ -161,20 +218,12 @@ function Offers({
           <strong>
             {filteredDeals.length} {search.trim() ? 'resultados encontrados' : 'ofertas encontradas'}
           </strong>
-          {catalogLoading && <span>Buscando no catalogo...</span>}
-          <label>
-            Ordenar por
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </label>
+          {catalogLoading && <span>Buscando no catálogo...</span>}
         </div>
       </section>
 
       {loading && <p className="status-message">Carregando ofertas...</p>}
-      {catalogLoading && !loading && <p className="status-message">Buscando jogos fora de promocao...</p>}
+      {catalogLoading && !loading && <p className="status-message">Buscando jogos fora de promoção...</p>}
       {warning && !loading && <p className="status-message warning">{warning}</p>}
       {error && !loading && <p className="status-message error">{error}</p>}
 
@@ -183,19 +232,39 @@ function Offers({
       )}
 
       {!loading && !error && filteredDeals.length > 0 && (
-        <section className="games-grid">
-          {filteredDeals.map((game) => (
-            <GameCard
-              game={game}
-              isWishlisted={isWishlisted(game)}
-              key={game.dealID}
-              onCreateAlert={onCreateAlert}
-              onSelect={onOpenGame}
-              onToggleWishlist={onToggleWishlist}
-              savedGame={getWishlistedGame?.(game)}
-            />
-          ))}
-        </section>
+        <>
+          <section className="games-grid">
+            {visibleDeals.map((game, index) => (
+              <GameCard
+                animateIn={animatedBatchStart !== null && index >= animatedBatchStart}
+                game={game}
+                isWishlisted={isWishlisted(game)}
+                key={game.dealID}
+                onCreateAlert={onCreateAlert}
+                onSelect={onOpenGame}
+                onToggleWishlist={onToggleWishlist}
+                savedGame={getWishlistedGame?.(game)}
+              />
+            ))}
+          </section>
+
+          {canLoadMore && (
+            <div className="load-more-row">
+              <button
+                className="load-more-button"
+                disabled={loadingMore}
+                onClick={handleLoadMoreResults}
+                type="button"
+              >
+                {loadingMore
+                  ? 'Carregando...'
+                  : search.trim()
+                    ? 'Mostrar mais jogos'
+                    : 'Carregar mais ofertas'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   )
