@@ -23,8 +23,8 @@ import java.util.Optional;
 public class DealService {
 
     private static final Duration CACHE_TTL = Duration.ofMinutes(12);
-    private static final int DEFAULT_PAGE_SIZE = 60;
-    private static final int DEFAULT_MAX_PAGES = 10;
+    private static final int DEFAULT_PAGE_SIZE = 100;
+    private static final int DEFAULT_MAX_PAGES = 100;
 
     private final DealRepository dealRepository;
     private final RestClient restClient = RestClient.create();
