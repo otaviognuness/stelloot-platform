@@ -49,7 +49,7 @@ public class DealService {
     ) {
         int safePageNumber = pageNumber == null ? 0 : Math.max(pageNumber, 0);
 
-        if (!forceRefresh && safePageNumber == 0 && isBlank(title) && isBlank(storeID) && Instant.now().isBefore(cacheExpiresAt) && !cachedDeals.isEmpty()) {
+        if (!forceRefresh && allPages && safePageNumber == 0 && isBlank(title) && isBlank(storeID) && Instant.now().isBefore(cacheExpiresAt) && !cachedDeals.isEmpty()) {
             return cachedDeals;
         }
 
@@ -59,7 +59,7 @@ public class DealService {
                     ? fetchAllDealPages(title, storeID, safePageSize, sortBy, maxPages, onSale)
                     : fetchDealPage(title, storeID, safePageSize, sortBy, safePageNumber, onSale).deals();
 
-            if (safePageNumber == 0 && isBlank(title) && isBlank(storeID)) {
+            if (allPages && safePageNumber == 0 && isBlank(title) && isBlank(storeID)) {
                 cachedDeals = safeDeals;
                 cacheExpiresAt = Instant.now().plus(CACHE_TTL);
             }

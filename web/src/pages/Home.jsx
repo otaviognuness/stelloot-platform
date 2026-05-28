@@ -9,6 +9,7 @@ import {
   getPopularRank,
   sortDeals,
 } from '../utils/catalog'
+import { getGameArtwork } from '../utils/deals'
 
 const HOME_TABS = [
   { id: 'popular', label: 'Populares' },
@@ -39,15 +40,15 @@ function Home({
     const filteredDeals = filterBySearch(filterByStore(deals, storeFilter), search)
 
     if (activeTab === 'popular') {
-      const knownDeals = filteredDeals.filter((deal) => getPopularRank(deal) < 999)
-      const sourceDeals = knownDeals.length ? knownDeals : filteredDeals
+      const knownDeals = filteredDeals
+        .filter((deal) => getPopularRank(deal) < 999)
+        .sort((a, b) => getPopularRank(a) - getPopularRank(b))
+      const availableDeals = sortDeals(
+        filteredDeals.filter((deal) => getPopularRank(deal) === 999),
+        'dealRating'
+      )
 
-      return [...sourceDeals]
-        .sort((a, b) => {
-          const rank = getPopularRank(a) - getPopularRank(b)
-          return rank !== 0 ? rank : Number(b.dealRating || 0) - Number(a.dealRating || 0)
-        })
-        .slice(0, visibleLimit)
+      return [...knownDeals, ...availableDeals].slice(0, visibleLimit)
     }
 
     return sortDeals(filteredDeals, 'discount').slice(0, visibleLimit)
@@ -63,6 +64,7 @@ function Home({
       }, null),
     [visibleDeals]
   )
+  const highlightArtwork = highlightDeal ? getGameArtwork(highlightDeal) : ''
 
   function handleSearch(event) {
     event.preventDefault()
@@ -95,10 +97,22 @@ function Home({
         )}
       </header>
 
-      <section className="hero">
-        <div>
+      <section className={`hero${highlightArtwork ? ' has-artwork' : ''}`}>
+        {highlightArtwork && (
+          <img
+            alt=""
+            className="hero-artwork"
+            onError={(event) => {
+              if (highlightDeal?.thumb && event.currentTarget.src !== highlightDeal.thumb) {
+                event.currentTarget.src = highlightDeal.thumb
+              }
+            }}
+            src={highlightArtwork}
+          />
+        )}
+        <div className="hero-copy">
           <span className="tag">Ofertas PC em tempo real</span>
-          <h2>Encontre o menor preço dos seus jogos favoritos</h2>
+          <h2>Ofertas de PC para jogar hoje</h2>
           <p>
             Compare promoções de PC, salve jogos na wishlist e acompanhe
             descontos com preço estimado em reais.
@@ -170,7 +184,7 @@ function Home({
       )}
 
       {!loading && !error && visibleDeals.length > 0 && (
-        <section className="games-grid">
+        <section className="games-grid home-games-grid">
           {visibleDeals.map((game) => (
             <GameCard
               game={game}

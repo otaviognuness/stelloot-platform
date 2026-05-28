@@ -54,6 +54,7 @@ function Offers({
   const [catalogResults, setCatalogResults] = useState([])
   const [catalogQuery, setCatalogQuery] = useState('')
   const [catalogLoading, setCatalogLoading] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(24)
   const [animatedBatchStart, setAnimatedBatchStart] = useState(null)
 
@@ -153,7 +154,7 @@ function Offers({
 
   return (
     <>
-      <header className="page-heading">
+      <header className="page-heading offers-heading">
         <div>
             <span className="tag">Catálogo PC</span>
             <h2>Ofertas de jogos</h2>
@@ -176,7 +177,17 @@ function Offers({
           />
         </form>
 
-        <div className="filter-row">
+        <button
+          aria-expanded={filtersOpen}
+          className="mobile-filters-trigger"
+          onClick={() => setFiltersOpen((current) => !current)}
+          type="button"
+        >
+          <span>Filtros e ordenação</span>
+          <strong>{filtersOpen ? 'Fechar' : 'Abrir'}</strong>
+        </button>
+
+        <div className={`filter-row${filtersOpen ? ' mobile-open' : ''}`}>
           <div className="store-filter-group">
             <StoreSelector
               label="Loja"
@@ -233,7 +244,7 @@ function Offers({
 
       {!loading && !error && filteredDeals.length > 0 && (
         <>
-          <section className="games-grid">
+          <section className="games-grid offers-grid">
             {visibleDeals.map((game, index) => (
               <GameCard
                 animateIn={animatedBatchStart !== null && index >= animatedBatchStart}

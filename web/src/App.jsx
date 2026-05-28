@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import TargetPriceModal from './components/TargetPriceModal'
@@ -12,7 +12,15 @@ import Settings from './pages/Settings'
 import Wishlist from './pages/Wishlist'
 import { getAuthenticatedUser } from './services/authService'
 import { getPcDeals } from './services/cheapSharkService'
+import {
+  getWishlist,
+  removeWishlistItem,
+  saveWishlistItem,
+  updateWishlistTargetPrice,
+} from './services/wishlistService'
 import { dollarToBRL, getGameKey, selectBestDeals } from './utils/deals'
+
+const MIN_EXPECTED_HOME_DEALS = 4
 
 function App() {
   const [page, setPage] = useState('home')
@@ -30,6 +38,7 @@ function App() {
   const [currentUser, setCurrentUser] = useLocalStorage('stelloot:user', null)
   const [wishlist, setWishlist] = useLocalStorage('stelloot:wishlist', [])
   const [offersInitialSearch, setOffersInitialSearch] = useState('')
+  const retriedTruncatedDeals = useRef(false)
   const activeTheme = ['default', 'black', 'light'].includes(theme) ? theme : 'default'
 
   const loadDeals = useCallback(async ({ forceRefresh = false } = {}) => {
@@ -79,6 +88,19 @@ function App() {
   }, [loadDeals])
 
   useEffect(() => {
+    const hasTruncatedInitialList =
+      !loadingDeals &&
+      !dealsError &&
+      deals.length > 0 &&
+      deals.length < MIN_EXPECTED_HOME_DEALS
+
+    if (!hasTruncatedInitialList || retriedTruncatedDeals.current) return
+
+    retriedTruncatedDeals.current = true
+    loadDeals({ forceRefresh: true })
+  }, [deals.length, dealsError, loadDeals, loadingDeals])
+
+  useEffect(() => {
     if (!currentUser?.token) return undefined
 
     let active = true
@@ -102,6 +124,24 @@ function App() {
       active = false
     }
   }, [currentUser?.token, setCurrentUser])
+
+  useEffect(() => {
+    if (!currentUser?.token) return undefined
+
+    let active = true
+
+    getWishlist(currentUser.token)
+      .then((items) => {
+        if (active) setWishlist(items)
+      })
+      .catch(() => {
+        if (active) setDealsWarning('Não foi possível sincronizar sua wishlist agora.')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentUser?.token, setWishlist])
 
   function handleNavigate(nextPage, options = {}) {
     setSettingsOpen(false)
@@ -133,44 +173,87 @@ function App() {
     return wishlist.some((item) => getGameKey(item) === key)
   }
 
-  function handleToggleWishlist(game) {
+  async function handleToggleWishlist(game) {
     const key = getGameKey(game)
+    const savedGame = getWishlistedGame(game)
 
-    setWishlist((currentWishlist) => {
-      if (currentWishlist.some((item) => getGameKey(item) === key)) {
-        return currentWishlist.filter((item) => getGameKey(item) !== key)
+    if (savedGame) {
+      setWishlist((currentWishlist) =>
+        currentWishlist.filter((item) => getGameKey(item) !== key)
+      )
+
+      if (currentUser?.token && savedGame.wishlistId) {
+        try {
+          await removeWishlistItem(currentUser.token, savedGame.wishlistId)
+        } catch {
+          setDealsWarning('Não foi possível remover o jogo da wishlist agora.')
+          setWishlist(await getWishlist(currentUser.token).catch(() => []))
+        }
       }
 
-      return [
-        {
-          ...game,
-          savedAt: Date.now(),
-          targetPrice: Math.max(1, Math.floor(dollarToBRL(game.salePrice) * 0.85)),
-        },
-        ...currentWishlist,
-      ]
+      return
+    }
+
+    const newItem = {
+      ...game,
+      targetPrice: Math.max(1, Math.floor(dollarToBRL(game.salePrice) * 0.85)),
+    }
+
+    setWishlist((currentWishlist) => {
+      return [newItem, ...currentWishlist]
     })
+
+    if (currentUser?.token) {
+      try {
+        const savedItem = await saveWishlistItem(currentUser.token, newItem)
+        setWishlist((currentWishlist) =>
+          currentWishlist.map((item) => (getGameKey(item) === key ? savedItem : item))
+        )
+      } catch {
+        setDealsWarning('Não foi possível salvar o jogo na wishlist agora.')
+        setWishlist((currentWishlist) =>
+          currentWishlist.filter((item) => getGameKey(item) !== key)
+        )
+      }
+    }
   }
 
   function handleCreateAlert(game) {
     setTargetPriceGame(game)
   }
 
-  function handleSaveTargetPrice(targetPrice) {
+  async function handleSaveTargetPrice(targetPrice) {
     const key = getGameKey(targetPriceGame)
+    const savedGame = getWishlistedGame(targetPriceGame)
+    const nextItem = { ...(savedGame || targetPriceGame), targetPrice }
+
     setWishlist((currentWishlist) => {
       const alreadySaved = currentWishlist.some((item) => getGameKey(item) === key)
 
       if (alreadySaved) {
         return currentWishlist.map((item) =>
-          getGameKey(item) === key ? { ...item, targetPrice } : item
+          getGameKey(item) === key ? nextItem : item
         )
       }
 
-      return [{ ...targetPriceGame, savedAt: Date.now(), targetPrice }, ...currentWishlist]
+      return [nextItem, ...currentWishlist]
     })
 
     setTargetPriceGame(null)
+
+    if (currentUser?.token) {
+      try {
+        const syncedItem = savedGame?.wishlistId
+          ? await updateWishlistTargetPrice(currentUser.token, savedGame.wishlistId, targetPrice)
+          : await saveWishlistItem(currentUser.token, nextItem, targetPrice)
+
+        setWishlist((currentWishlist) =>
+          currentWishlist.map((item) => (getGameKey(item) === key ? syncedItem : item))
+        )
+      } catch {
+        setDealsWarning('Não foi possível atualizar o preço alvo agora.')
+      }
+    }
   }
 
   function getWishlistedGame(game) {
@@ -178,8 +261,9 @@ function App() {
     return wishlist.find((item) => getGameKey(item) === key) || null
   }
 
-  function handleLoginSuccess(authResponse) {
+  async function handleLoginSuccess(authResponse) {
     const user = authResponse.user || authResponse
+    const anonymousWishlist = wishlist.filter((item) => !item.wishlistId)
 
     setCurrentUser({
       id: user.id,
@@ -189,11 +273,26 @@ function App() {
       token: authResponse.token,
       tokenType: authResponse.tokenType || 'Bearer',
     })
+
+    if (authResponse.token && anonymousWishlist.length) {
+      try {
+        await Promise.all(
+          anonymousWishlist.map((game) =>
+            saveWishlistItem(authResponse.token, game, game.targetPrice)
+          )
+        )
+        setWishlist(await getWishlist(authResponse.token))
+      } catch {
+        setDealsWarning('Você entrou, mas alguns itens locais não puderam ser sincronizados.')
+      }
+    }
+
     handleNavigate('home')
   }
 
   function handleLogout() {
     setCurrentUser(null)
+    setWishlist([])
   }
 
   function renderContent() {
@@ -284,7 +383,16 @@ function App() {
       className={page === 'login' ? 'app login-layout' : 'app'}
       data-theme={activeTheme}
     >
-      {page !== 'login' && <Sidebar activePage={page} onNavigate={handleNavigate} />}
+      {page !== 'login' && (
+        <Sidebar
+          activePage={page}
+          currentUser={currentUser}
+          onLogin={() => handleNavigate('login')}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+      )}
 
       <section className="content">
         {renderContent()}

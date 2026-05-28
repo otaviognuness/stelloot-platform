@@ -54,7 +54,7 @@ function Dashboard({ onNavigate, wishlist }) {
   }
 
   return (
-    <>
+    <div className="dashboard-page">
       <header className="page-heading">
         <div>
           <span className="tag">Resumo PC</span>
@@ -105,7 +105,7 @@ function Dashboard({ onNavigate, wishlist }) {
         </div>
         <button onClick={() => onNavigate(featureDestination)} type="button">{featureAction}</button>
       </section>
-    </>
+    </div>
   )
 }
 

@@ -2,8 +2,9 @@ import { STORE_FILTERS } from '../config/stores'
 import { selectBestDeals } from '../utils/deals'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-const CACHE_KEY = 'stelloot:backend:pc-deals:v3'
+const CACHE_KEY = 'stelloot:backend:pc-deals:v6'
 const CACHE_TTL = 1000 * 60 * 12
+const MIN_INITIAL_DEALS = 4
 export const DEALS_PAGE_SIZE = 24
 
 function buildApiUrl(path, params) {
@@ -59,7 +60,9 @@ export function getCachedPcDeals() {
 export async function getPcDeals({ forceRefresh = false, pageNumber = 0 } = {}) {
   const isFirstPage = pageNumber === 0
   const cached = isFirstPage ? readCachedDeals() : null
-  const hasFreshCache = cached && Date.now() - cached.createdAt < CACHE_TTL
+  const hasEnoughCachedDeals = cached?.deals?.length >= MIN_INITIAL_DEALS
+  const hasFreshCache =
+    hasEnoughCachedDeals && Date.now() - cached.createdAt < CACHE_TTL
 
   if (!forceRefresh && hasFreshCache) {
     return {
@@ -76,7 +79,7 @@ export async function getPcDeals({ forceRefresh = false, pageNumber = 0 } = {}) 
       pageSize: DEALS_PAGE_SIZE,
       pageNumber,
       sortBy: 'DealRating',
-      forceRefresh: isFirstPage && forceRefresh,
+      forceRefresh: isFirstPage && (forceRefresh || Boolean(cached && !hasEnoughCachedDeals)),
     })
     const deals = selectBestDeals(data)
 

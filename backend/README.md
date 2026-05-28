@@ -6,15 +6,15 @@ API da plataforma StelLoot, criada com Spring Boot.
 
 - Centralizar chamadas para APIs externas, como CheapShark.
 - Expor endpoints REST para o front-end web e o app mobile.
-- Persistir usuarios, jogos, favoritos e ofertas.
-- Autenticar usuarios com login, cadastro, BCrypt e JWT.
+- Persistir usuários, jogos, wishlist, preço alvo e ofertas.
+- Autenticar usuários com login, cadastro, BCrypt e JWT.
 
 ## Stack
 
 - Java 21
 - Spring Boot
 - Spring Data JPA
-- H2 em memoria para desenvolvimento local
+- H2 em memória para desenvolvimento local
 - PostgreSQL para ambiente persistente
 
 ## Como rodar
@@ -38,12 +38,21 @@ Endpoint principal usado pelo front:
 GET http://localhost:8080/api/deals
 ```
 
-Autenticacao:
+Autenticação:
 
 ```text
 POST /api/auth/register
 POST /api/auth/login
 GET  /api/auth/me
+```
+
+Wishlist autenticada, compartilhada pelo web e pelo mobile:
+
+```text
+GET    /api/wishlist
+POST   /api/wishlist
+PATCH  /api/wishlist/{id}/target-price
+DELETE /api/wishlist/{id}
 ```
 
 Para usar PostgreSQL e uma chave JWT local:

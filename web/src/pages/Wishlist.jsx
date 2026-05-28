@@ -10,7 +10,7 @@ function Wishlist({
   onToggleWishlist,
 }) {
   return (
-    <>
+    <div className="wishlist-page">
       <header className="page-heading">
         <div>
           <span className="tag">Biblioteca desejada</span>
@@ -45,7 +45,7 @@ function Wishlist({
           ))}
         </section>
       )}
-    </>
+    </div>
   )
 }
 

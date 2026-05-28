@@ -1,15 +1,15 @@
 # StelLoot Docs
 
-Pasta para documentacao do projeto.
+Pasta para documentação do projeto.
 
 ## O que colocar aqui
 
-- Requisitos funcionais e nao funcionais.
+- Requisitos funcionais e não funcionais.
 - Diagramas de arquitetura.
 - Modelo de dados.
 - Prints das telas.
-- Roteiro da apresentacao.
-- Decisoes tecnicas importantes.
+- Roteiro da apresentação.
+- Decisões técnicas importantes.
 
 ## Estrutura sugerida
 

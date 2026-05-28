@@ -1,6 +1,6 @@
 # Modelo de dados
 
-Modelo sugerido para evoluir o banco da StelLoot.
+Modelo para evoluir o banco da StelLoot. A primeira versão persiste usuários e itens de wishlist no PostgreSQL/H2 por meio do backend Spring Boot.
 
 ## Entidades principais
 
@@ -50,8 +50,18 @@ deals
 wishlist_items
 - id
 - user_id
-- game_id
-- created_at
+- external_game_id
+- deal_id
+- store_id
+- steam_app_id
+- title
+- image_url
+- sale_price
+- normal_price
+- savings
+- target_price
+- catalog_only
+- saved_at
 
 price_alerts
 - id
@@ -75,10 +85,10 @@ price_history
 
 ## Regra central
 
-Um jogo nao deve ser duplicado por loja. A loja e a oferta devem ficar separadas.
+Um jogo não deve ser duplicado por loja. A loja e a oferta devem ficar separadas na evolução do catálogo. Na wishlist atual, um snapshot da melhor oferta é salvo para permitir sincronização imediata entre web e mobile.
 
 ```text
 Cyberpunk 2077 = game
 Steam = store
-Cyberpunk 2077 em promocao na Steam = deal
+Cyberpunk 2077 em promoção na Steam = deal
 ```

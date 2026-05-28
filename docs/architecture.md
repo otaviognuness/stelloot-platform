@@ -1,6 +1,6 @@
 # Arquitetura
 
-O StelLoot usa um monorepo simples, com uma pasta para cada aplicacao principal.
+O StelLoot usa um monorepo simples, com uma pasta para cada aplicação principal.
 
 ```text
 stelloot-platform/
@@ -14,18 +14,25 @@ stelloot-platform/
 ## Fluxo atual
 
 ```text
-React/Vite web
-    -> Spring Boot API
-        -> CheapShark API
+React/Vite web ---------|
+                       |-> Spring Boot API -> PostgreSQL
+React Native/Expo -----|        |
+                                `-> CheapShark API
 ```
 
 ## Responsabilidades por pasta
 
-- `backend`: API REST, banco de dados, regras da aplicacao e integracoes externas.
-- `web`: aplicacao web consumindo a API do backend.
-- `mobile`: aplicacao mobile Expo, prevista para consumir a mesma API.
-- `docs`: documentacao tecnica, modelo de dados, prints e materiais da apresentacao.
+- `backend`: API REST, banco de dados, regras da aplicação, JWT e integrações externas.
+- `web`: aplicação web consumindo a API do backend.
+- `mobile`: aplicação Expo consumindo a mesma API e mantendo sessão em Secure Store.
+- `docs`: documentação técnica, modelo de dados, prints e materiais da apresentação.
 
-## Decisao de arquitetura
+## Decisão de arquitetura
 
-O front-end nao deve depender diretamente da CheapShark no longo prazo. O backend deve centralizar as chamadas externas para facilitar cache, tratamento de erro, troca de provedor, autenticacao e regras de negocio.
+O front-end não depende diretamente da CheapShark. O backend centraliza chamadas externas, autenticação e wishlist para que web e mobile enxerguem os mesmos dados.
+
+## Fluxos implementados
+
+- Ofertas e busca: clientes chamam `/api/deals` e `/api/games/search`.
+- Autenticação: login/cadastro retornam JWT, enviado em `Authorization: Bearer ...`.
+- Wishlist: itens e preços alvo são persistidos em `/api/wishlist` para o usuário autenticado.
