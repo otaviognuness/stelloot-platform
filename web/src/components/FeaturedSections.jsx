@@ -57,7 +57,6 @@ const SECTION_DEFS = [
   },
 ]
 
-const ALL_SECTIONS_IDS = SECTION_DEFS.map((s) => s.id)
 const STORAGE_KEY = 'stelloot:featured-v2'
 
 // ─── Aplica filtro de loja + monta itens da seção ─────────────────────────────
@@ -275,7 +274,9 @@ function FeaturedSections({ deals, isWishlisted, onOpenGame, onToggleWishlist })
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
       if (saved?.sections?.length) return saved.sections
-    } catch {}
+    } catch {
+      // localStorage can be unavailable or contain invalid JSON.
+    }
     return [] // padrão: nada selecionado
   })
 
@@ -283,7 +284,9 @@ function FeaturedSections({ deals, isWishlisted, onOpenGame, onToggleWishlist })
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
       if (saved?.store) return saved.store
-    } catch {}
+    } catch {
+      // localStorage can be unavailable or contain invalid JSON.
+    }
     return 'all' // padrão: todas as lojas
   })
 

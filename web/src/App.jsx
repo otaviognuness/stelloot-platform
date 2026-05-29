@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import TargetPriceModal from './components/TargetPriceModal'
@@ -12,7 +12,15 @@ import Settings from './pages/Settings'
 import Wishlist from './pages/Wishlist'
 import { getAuthenticatedUser } from './services/authService'
 import { getPcDeals } from './services/cheapSharkService'
+import {
+  getWishlist,
+  removeWishlistItem,
+  saveWishlistItem,
+  updateWishlistTargetPrice,
+} from './services/wishlistService'
 import { dollarToBRL, getGameKey, selectBestDeals } from './utils/deals'
+
+const MIN_EXPECTED_HOME_DEALS = 4
 
 function App() {
   const [page, setPage] = useState('home')
@@ -31,6 +39,7 @@ function App() {
   const [currentUser, setCurrentUser] = useLocalStorage('stelloot:user', null)
   const [wishlist, setWishlist] = useLocalStorage('stelloot:wishlist', [])
   const [offersInitialSearch, setOffersInitialSearch] = useState('')
+  const retriedTruncatedDeals = useRef(false)
   const activeTheme = ['default', 'black', 'light'].includes(theme) ? theme : 'default'
 
   const loadDeals = useCallback(async ({ forceRefresh = false } = {}) => {
@@ -48,7 +57,7 @@ function App() {
       setDealsError(
         error?.code === 'RATE_LIMIT'
           ? 'A CheapShark bloqueou chamadas temporariamente por limite de uso. Aguarde alguns minutos e atualize.'
-          : 'Não foi possível carregar o backend agora. Confirme se o Spring Boot está rodando na porta 8080.'
+          : 'Nao foi possivel carregar o backend agora. Confirme se o Spring Boot esta rodando na porta 8080.'
       )
     } finally {
       setLoadingDeals(false)
@@ -57,6 +66,7 @@ function App() {
 
   async function handleLoadMoreDeals() {
     if (loadingMoreDeals || !hasMoreDeals) return
+
     try {
       setLoadingMoreDeals(true)
       const result = await getPcDeals({ pageNumber: dealsPage + 1 })
@@ -64,7 +74,7 @@ function App() {
       setDealsPage(result.pageNumber)
       setHasMoreDeals(result.hasMore)
     } catch {
-      setDealsWarning('Não foi possível carregar mais ofertas agora.')
+      setDealsWarning('Nao foi possivel carregar mais ofertas agora.')
     } finally {
       setLoadingMoreDeals(false)
     }
@@ -75,7 +85,19 @@ function App() {
     return () => window.clearTimeout(taskId)
   }, [loadDeals])
 
-  // Valida token salvo ao carregar — faz logout silencioso se expirado
+  useEffect(() => {
+    const hasTruncatedInitialList =
+      !loadingDeals &&
+      !dealsError &&
+      deals.length > 0 &&
+      deals.length < MIN_EXPECTED_HOME_DEALS
+
+    if (!hasTruncatedInitialList || retriedTruncatedDeals.current) return
+
+    retriedTruncatedDeals.current = true
+    loadDeals({ forceRefresh: true })
+  }, [deals.length, dealsError, loadDeals, loadingDeals])
+
   useEffect(() => {
     if (!currentUser?.token) return undefined
 
@@ -89,30 +111,54 @@ function App() {
           ...session,
           email: user.email,
           id: user.id,
-          name: user.username || user.email?.split('@')[0] || 'Usuário',
+          name: user.username || user.email?.split('@')[0] || 'Usuario',
         }))
       })
       .catch(() => {
         if (!active) return
-        // Token inválido ou expirado — limpa sessão e avisa
         setCurrentUser(null)
         setSessionExpired(true)
       })
 
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [currentUser?.token, setCurrentUser])
+
+  useEffect(() => {
+    if (!currentUser?.token) return undefined
+
+    let active = true
+
+    getWishlist(currentUser.token)
+      .then((items) => {
+        if (active) setWishlist(items)
+      })
+      .catch(() => {
+        if (active) setDealsWarning('Nao foi possivel sincronizar sua wishlist agora.')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentUser?.token, setWishlist])
 
   function handleNavigate(nextPage, options = {}) {
     setSettingsOpen(false)
     setTargetPriceGame(null)
     setSessionExpired(false)
 
-    if (nextPage === 'alerts') { setPage('wishlist'); return }
+    if (nextPage === 'alerts') {
+      setPage('wishlist')
+      return
+    }
+
     if (nextPage === 'offers') setOffersInitialSearch(options.search || '')
     if (nextPage === 'home') setSelectedGame(null)
-
-    // Se já está logado e tenta ir para login, redireciona para home
-    if (nextPage === 'login' && currentUser) { setPage('home'); return }
+    if (nextPage === 'login' && currentUser) {
+      setPage('home')
+      return
+    }
 
     setPage(nextPage)
   }
@@ -127,61 +173,127 @@ function App() {
     return wishlist.some((item) => getGameKey(item) === key)
   }
 
-  function handleToggleWishlist(game) {
-    const key = getGameKey(game)
-    setWishlist((currentWishlist) => {
-      if (currentWishlist.some((item) => getGameKey(item) === key)) {
-        return currentWishlist.filter((item) => getGameKey(item) !== key)
-      }
-      return [
-        {
-          ...game,
-          savedAt: Date.now(),
-          targetPrice: Math.max(1, Math.floor(dollarToBRL(game.salePrice) * 0.85)),
-        },
-        ...currentWishlist,
-      ]
-    })
-  }
-
-  function handleCreateAlert(game) { setTargetPriceGame(game) }
-
-  function handleSaveTargetPrice(targetPrice) {
-    const key = getGameKey(targetPriceGame)
-    setWishlist((currentWishlist) => {
-      const alreadySaved = currentWishlist.some((item) => getGameKey(item) === key)
-      if (alreadySaved) {
-        return currentWishlist.map((item) =>
-          getGameKey(item) === key ? { ...item, targetPrice } : item
-        )
-      }
-      return [{ ...targetPriceGame, savedAt: Date.now(), targetPrice }, ...currentWishlist]
-    })
-    setTargetPriceGame(null)
-  }
-
   function getWishlistedGame(game) {
     const key = getGameKey(game)
     return wishlist.find((item) => getGameKey(item) === key) || null
   }
 
-  function handleLoginSuccess(authResponse) {
+  async function handleToggleWishlist(game) {
+    const key = getGameKey(game)
+    const savedGame = getWishlistedGame(game)
+
+    if (savedGame) {
+      setWishlist((currentWishlist) =>
+        currentWishlist.filter((item) => getGameKey(item) !== key)
+      )
+
+      if (currentUser?.token && savedGame.wishlistId) {
+        try {
+          await removeWishlistItem(currentUser.token, savedGame.wishlistId)
+        } catch {
+          setDealsWarning('Nao foi possivel remover o jogo da wishlist agora.')
+          setWishlist(await getWishlist(currentUser.token).catch(() => []))
+        }
+      }
+
+      return
+    }
+
+    const newItem = {
+      ...game,
+      targetPrice: Math.max(1, Math.floor(dollarToBRL(game.salePrice) * 0.85)),
+    }
+
+    setWishlist((currentWishlist) => [newItem, ...currentWishlist])
+
+    if (currentUser?.token) {
+      try {
+        const savedItem = await saveWishlistItem(currentUser.token, newItem)
+        setWishlist((currentWishlist) =>
+          currentWishlist.map((item) => (getGameKey(item) === key ? savedItem : item))
+        )
+      } catch {
+        setDealsWarning('Nao foi possivel salvar o jogo na wishlist agora.')
+        setWishlist((currentWishlist) =>
+          currentWishlist.filter((item) => getGameKey(item) !== key)
+        )
+      }
+    }
+  }
+
+  function handleCreateAlert(game) {
+    setTargetPriceGame(game)
+  }
+
+  async function handleSaveTargetPrice(targetPrice) {
+    const key = getGameKey(targetPriceGame)
+    const savedGame = getWishlistedGame(targetPriceGame)
+    const nextItem = {
+      ...(savedGame || targetPriceGame),
+      targetPrice,
+    }
+
+    setWishlist((currentWishlist) => {
+      const alreadySaved = currentWishlist.some((item) => getGameKey(item) === key)
+      if (alreadySaved) {
+        return currentWishlist.map((item) =>
+          getGameKey(item) === key ? nextItem : item
+        )
+      }
+
+      return [nextItem, ...currentWishlist]
+    })
+    setTargetPriceGame(null)
+
+    if (currentUser?.token) {
+      try {
+        const syncedItem = savedGame?.wishlistId
+          ? await updateWishlistTargetPrice(currentUser.token, savedGame.wishlistId, targetPrice)
+          : await saveWishlistItem(currentUser.token, nextItem, targetPrice)
+
+        setWishlist((currentWishlist) =>
+          currentWishlist.map((item) => (getGameKey(item) === key ? syncedItem : item))
+        )
+      } catch {
+        setDealsWarning('Nao foi possivel atualizar o preco alvo agora.')
+      }
+    }
+  }
+
+  async function handleLoginSuccess(authResponse) {
     const user = authResponse.user || authResponse
+    const anonymousWishlist = wishlist.filter((item) => !item.wishlistId)
+
     setSessionExpired(false)
     setCurrentUser({
       id: user.id,
       email: user.email || 'usuario@stelloot.local',
-      name: user.username || user.name || user.email?.split('@')[0] || 'Usuário',
+      name: user.username || user.name || user.email?.split('@')[0] || 'Usuario',
       provider: user.provider || 'local',
       token: authResponse.token,
       tokenType: authResponse.tokenType || 'Bearer',
     })
+
+    if (authResponse.token && anonymousWishlist.length) {
+      try {
+        await Promise.all(
+          anonymousWishlist.map((game) =>
+            saveWishlistItem(authResponse.token, game, game.targetPrice)
+          )
+        )
+        setWishlist(await getWishlist(authResponse.token))
+      } catch {
+        setDealsWarning('Voce entrou, mas alguns itens locais nao puderam ser sincronizados.')
+      }
+    }
+
     handleNavigate('home')
   }
 
   function handleLogout() {
     setCurrentUser(null)
     setSessionExpired(false)
+    setWishlist([])
     setPage('home')
   }
 
@@ -190,8 +302,8 @@ function App() {
       deals,
       error: dealsError,
       getWishlistedGame,
-      isWishlisted,
       hasMoreDeals,
+      isWishlisted,
       loading: loadingDeals,
       loadingMore: loadingMoreDeals,
       onCreateAlert: handleCreateAlert,
@@ -202,7 +314,6 @@ function App() {
       warning: dealsWarning,
     }
 
-    // Se está logado e tenta acessar a tela de login → manda pra home
     if (page === 'login' && currentUser) {
       return (
         <Home
@@ -281,28 +392,34 @@ function App() {
       className={page === 'login' && !currentUser ? 'app login-layout' : 'app'}
       data-theme={activeTheme}
     >
-      {(page !== 'login' || currentUser) && (
-        <Sidebar activePage={page} onNavigate={handleNavigate} />
+      {page !== 'login' && (
+        <Sidebar
+          activePage={page}
+          currentUser={currentUser}
+          onLogin={() => handleNavigate('login')}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       )}
 
       <section className="content">
-        {/* Aviso de sessão expirada */}
         {sessionExpired && page !== 'login' && (
           <div className="session-expired-banner">
-            Sua sessão expirou. Faça login novamente para acessar sua conta.
+            Sua sessao expirou. Faca login novamente para acessar sua conta.
             <button type="button" onClick={() => handleNavigate('login')}>Entrar</button>
-            <button type="button" className="dismiss" onClick={() => setSessionExpired(false)}>✕</button>
+            <button type="button" className="dismiss" onClick={() => setSessionExpired(false)}>x</button>
           </div>
         )}
         {renderContent()}
       </section>
 
-      {(page !== 'login' || currentUser) && (
+      {page !== 'login' && (
         <button
-          aria-label="Abrir configurações"
+          aria-label="Abrir configuracoes"
           className={`settings-trigger${settingsOpen ? ' open' : ''}`}
           onClick={() => setSettingsOpen(true)}
-          title="Configurações"
+          title="Configuracoes"
           type="button"
         >
           <span aria-hidden="true">&#9881;</span>

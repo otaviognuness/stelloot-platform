@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import FeaturedSections from '../components/FeaturedSections'
+import { getGameArtwork } from '../utils/deals'
 
 function Home({
   currentUser,
@@ -25,6 +25,7 @@ function Home({
       }, null),
     [deals]
   )
+  const highlightArtwork = highlightDeal ? getGameArtwork(highlightDeal) : ''
 
   function handleSearch(event) {
     event.preventDefault()
@@ -33,14 +34,13 @@ function Home({
 
   return (
     <>
-      {/* ── Top bar ── */}
       <header className="topbar">
         <form className="search" onSubmit={handleSearch}>
           <span className="search-icon">Search</span>
           <input
-            placeholder="Buscar jogo, oferta ou catálogo..."
+            placeholder="Buscar jogo, oferta ou catalogo..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
           <button className="search-submit" type="submit">Buscar</button>
         </form>
@@ -56,17 +56,28 @@ function Home({
         )}
       </header>
 
-      {/* ── Hero ── */}
-      <section className="hero">
-        <div>
+      <section className={`hero${highlightArtwork ? ' has-artwork' : ''}`}>
+        {highlightArtwork && (
+          <img
+            alt=""
+            className="hero-artwork"
+            onError={(event) => {
+              if (highlightDeal?.thumb && event.currentTarget.src !== highlightDeal.thumb) {
+                event.currentTarget.src = highlightDeal.thumb
+              }
+            }}
+            src={highlightArtwork}
+          />
+        )}
+        <div className="hero-copy">
           <span className="tag">Ofertas PC em tempo real</span>
-          <h2>Encontre o menor preço dos seus jogos favoritos</h2>
+          <h2>Ofertas de PC para jogar hoje</h2>
           <p>
-            Compare promoções de PC, salve jogos na wishlist e acompanhe
-            descontos com preço estimado em reais.
+            Compare promocoes de PC, salve jogos na wishlist e acompanhe
+            descontos com preco estimado em reais.
           </p>
           <div className="hero-actions">
-            <button onClick={() => onNavigate('offers')} type="button">Ver promoções</button>
+            <button onClick={() => onNavigate('offers')} type="button">Ver promocoes</button>
             <button className="secondary" onClick={() => onNavigate('wishlist')} type="button">
               Wishlist
             </button>
@@ -82,12 +93,10 @@ function Home({
         </div>
       </section>
 
-      {/* ── Status ── */}
-      {loading && <p className="status-message">Carregando promoções...</p>}
+      {loading && <p className="status-message">Carregando promocoes...</p>}
       {warning && !loading && <p className="status-message warning">{warning}</p>}
       {error && !loading && <p className="status-message error">{error}</p>}
 
-      {/* ── Featured sections — substitui tabs + grid antigos ── */}
       {!loading && !error && (
         <FeaturedSections
           deals={deals}

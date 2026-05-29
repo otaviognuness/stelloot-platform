@@ -6,9 +6,10 @@ Front-end web da plataforma StelLoot, criado com React + Vite.
 
 - Exibir ofertas de jogos de PC.
 - Consumir a API Spring Boot em `backend/`.
-- Permitir navegacao entre explorar, ofertas, wishlist, dashboard e detalhes.
+- Permitir navegação entre explorar, ofertas, wishlist, dashboard e detalhes.
 - Manter filtros por loja e busca de jogos.
 - Fazer login e cadastro pela API com JWT.
+- Sincronizar wishlist e preço alvo com o app mobile após login.
 
 ## Estrutura principal
 
@@ -33,7 +34,7 @@ npm install
 npm run dev
 ```
 
-Por padrao, o front usa:
+Por padrão, o front usa:
 
 ```text
 http://localhost:8080/api
@@ -45,7 +46,7 @@ Para alterar a URL da API, crie `web/.env`:
 VITE_API_URL=http://localhost:8080/api
 ```
 
-## Validacao
+## Validação
 
 ```powershell
 npm run lint
