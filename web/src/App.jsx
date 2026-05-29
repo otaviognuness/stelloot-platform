@@ -26,6 +26,7 @@ function App() {
   const [hasMoreDeals, setHasMoreDeals] = useState(true)
   const [dealsError, setDealsError] = useState('')
   const [dealsWarning, setDealsWarning] = useState('')
+  const [sessionExpired, setSessionExpired] = useState(false)
   const [theme, setTheme] = useLocalStorage('stelloot:theme', 'default')
   const [currentUser, setCurrentUser] = useLocalStorage('stelloot:user', null)
   const [wishlist, setWishlist] = useLocalStorage('stelloot:wishlist', [])
@@ -56,7 +57,6 @@ function App() {
 
   async function handleLoadMoreDeals() {
     if (loadingMoreDeals || !hasMoreDeals) return
-
     try {
       setLoadingMoreDeals(true)
       const result = await getPcDeals({ pageNumber: dealsPage + 1 })
@@ -71,13 +71,11 @@ function App() {
   }
 
   useEffect(() => {
-    const taskId = window.setTimeout(() => {
-      loadDeals()
-    }, 0)
-
+    const taskId = window.setTimeout(() => loadDeals(), 0)
     return () => window.clearTimeout(taskId)
   }, [loadDeals])
 
+  // Valida token salvo ao carregar — faz logout silencioso se expirado
   useEffect(() => {
     if (!currentUser?.token) return undefined
 
@@ -86,7 +84,7 @@ function App() {
     getAuthenticatedUser(currentUser.token)
       .then((user) => {
         if (!active) return
-
+        setSessionExpired(false)
         setCurrentUser((session) => ({
           ...session,
           email: user.email,
@@ -95,30 +93,26 @@ function App() {
         }))
       })
       .catch(() => {
-        if (active) setCurrentUser(null)
+        if (!active) return
+        // Token inválido ou expirado — limpa sessão e avisa
+        setCurrentUser(null)
+        setSessionExpired(true)
       })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [currentUser?.token, setCurrentUser])
 
   function handleNavigate(nextPage, options = {}) {
     setSettingsOpen(false)
     setTargetPriceGame(null)
+    setSessionExpired(false)
 
-    if (nextPage === 'alerts') {
-      setPage('wishlist')
-      return
-    }
+    if (nextPage === 'alerts') { setPage('wishlist'); return }
+    if (nextPage === 'offers') setOffersInitialSearch(options.search || '')
+    if (nextPage === 'home') setSelectedGame(null)
 
-    if (nextPage === 'offers') {
-      setOffersInitialSearch(options.search || '')
-    }
-
-    if (nextPage === 'home') {
-      setSelectedGame(null)
-    }
+    // Se já está logado e tenta ir para login, redireciona para home
+    if (nextPage === 'login' && currentUser) { setPage('home'); return }
 
     setPage(nextPage)
   }
@@ -135,12 +129,10 @@ function App() {
 
   function handleToggleWishlist(game) {
     const key = getGameKey(game)
-
     setWishlist((currentWishlist) => {
       if (currentWishlist.some((item) => getGameKey(item) === key)) {
         return currentWishlist.filter((item) => getGameKey(item) !== key)
       }
-
       return [
         {
           ...game,
@@ -152,24 +144,19 @@ function App() {
     })
   }
 
-  function handleCreateAlert(game) {
-    setTargetPriceGame(game)
-  }
+  function handleCreateAlert(game) { setTargetPriceGame(game) }
 
   function handleSaveTargetPrice(targetPrice) {
     const key = getGameKey(targetPriceGame)
     setWishlist((currentWishlist) => {
       const alreadySaved = currentWishlist.some((item) => getGameKey(item) === key)
-
       if (alreadySaved) {
         return currentWishlist.map((item) =>
           getGameKey(item) === key ? { ...item, targetPrice } : item
         )
       }
-
       return [{ ...targetPriceGame, savedAt: Date.now(), targetPrice }, ...currentWishlist]
     })
-
     setTargetPriceGame(null)
   }
 
@@ -180,7 +167,7 @@ function App() {
 
   function handleLoginSuccess(authResponse) {
     const user = authResponse.user || authResponse
-
+    setSessionExpired(false)
     setCurrentUser({
       id: user.id,
       email: user.email || 'usuario@stelloot.local',
@@ -194,6 +181,8 @@ function App() {
 
   function handleLogout() {
     setCurrentUser(null)
+    setSessionExpired(false)
+    setPage('home')
   }
 
   function renderContent() {
@@ -211,6 +200,19 @@ function App() {
       onRefreshDeals: () => loadDeals({ forceRefresh: true }),
       onToggleWishlist: handleToggleWishlist,
       warning: dealsWarning,
+    }
+
+    // Se está logado e tenta acessar a tela de login → manda pra home
+    if (page === 'login' && currentUser) {
+      return (
+        <Home
+          {...sharedProps}
+          currentUser={currentUser}
+          onLogin={() => handleNavigate('login')}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      )
     }
 
     if (page === 'login') {
@@ -260,12 +262,7 @@ function App() {
     }
 
     if (page === 'dashboard') {
-      return (
-        <Dashboard
-          onNavigate={handleNavigate}
-          wishlist={wishlist}
-        />
-      )
+      return <Dashboard onNavigate={handleNavigate} wishlist={wishlist} />
     }
 
     return (
@@ -281,16 +278,26 @@ function App() {
 
   return (
     <main
-      className={page === 'login' ? 'app login-layout' : 'app'}
+      className={page === 'login' && !currentUser ? 'app login-layout' : 'app'}
       data-theme={activeTheme}
     >
-      {page !== 'login' && <Sidebar activePage={page} onNavigate={handleNavigate} />}
+      {(page !== 'login' || currentUser) && (
+        <Sidebar activePage={page} onNavigate={handleNavigate} />
+      )}
 
       <section className="content">
+        {/* Aviso de sessão expirada */}
+        {sessionExpired && page !== 'login' && (
+          <div className="session-expired-banner">
+            Sua sessão expirou. Faça login novamente para acessar sua conta.
+            <button type="button" onClick={() => handleNavigate('login')}>Entrar</button>
+            <button type="button" className="dismiss" onClick={() => setSessionExpired(false)}>✕</button>
+          </div>
+        )}
         {renderContent()}
       </section>
 
-      {page !== 'login' && (
+      {(page !== 'login' || currentUser) && (
         <button
           aria-label="Abrir configurações"
           className={`settings-trigger${settingsOpen ? ' open' : ''}`}
